@@ -323,6 +323,59 @@
   .active .fade-up:nth-child(3) { transition-delay: 0.3s; }
   .active .fade-up:nth-child(4) { transition-delay: 0.45s; }
 
+  /* ── 노트 패널 ── */
+  .notes-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 20, 40, 0.95);
+    color: #ddd;
+    padding: 24px 40px 32px;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 90;
+    transform: translateY(100%);
+    transition: transform 0.35s ease;
+    border-top: 3px solid var(--primary);
+    backdrop-filter: blur(10px);
+  }
+
+  .notes-panel.visible {
+    transform: translateY(0);
+  }
+
+  .notes-panel .notes-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64b5f6;
+    margin-bottom: 8px;
+  }
+
+  .notes-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: #546e7a;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+
+  .notes-btn:hover { transform: scale(1.1); background: #37474f; }
+  .notes-btn.active { background: var(--primary); }
+
   /* ── 반응형 ── */
   @media (max-width: 900px) {
     .slide { padding: 30px 24px; }
@@ -340,7 +393,7 @@
 <div class="deck" id="deck">
 
 <!-- ════════════ SLIDE 1: 표지 ════════════ -->
-<div class="slide blue active" id="s0">
+<div class="slide blue active" id="s0" data-notes="본 보고서는 코레일 승차권 예매 시스템의 보안 취약점을 분석한 결과입니다. 화이트해킹 관점에서 자동 예매 매크로를 구현하고, 실제 예매까지 성공함으로써 현행 anti-bot 방어의 한계를 입증했습니다.">
   <div class="slide-content" style="text-align:center;">
     <div class="fade-up">
       <p class="subtitle">보안 취약점 분석 보고</p>
@@ -352,7 +405,7 @@
 </div>
 
 <!-- ════════════ SLIDE 2: 목차 ════════════ -->
-<div class="slide dark" id="s1">
+<div class="slide dark" id="s1" data-notes="프레젠테이션은 6개 섹션으로 구성됩니다. 매크로의 동작 원리, DynaPath anti-bot 우회 분석, 실제 테스트 결과, 공격 벡터, 방어 대책, 그리고 적용 로드맵 순서로 진행합니다.">
   <div class="slide-content">
     <h2 class="fade-up">목차</h2>
     <div class="grid-2 fade-up" style="margin-top:20px;">
@@ -395,7 +448,7 @@
 </div>
 
 <!-- ════════════ SLIDE 3: 매크로 동작 흐름 ════════════ -->
-<div class="slide" id="s2">
+<div class="slide" id="s2" data-notes="매크로는 웹 UI에서 사용자 입력을 받아 Flask 서버가 처리합니다. 핵심은 korail2 라이브러리에 DynaPath 토큰 생성 패치를 적용하여 코레일 모바일 API에 직접 요청을 보내는 것입니다. 공식 앱과 동일한 형태의 요청을 구성하므로 서버가 구분하기 어렵습니다.">
   <div class="slide-content">
     <h2 class="fade-up">01. 매크로 동작 흐름</h2>
     <div class="flow fade-up">
@@ -427,7 +480,7 @@
 </div>
 
 <!-- ════════════ SLIDE 4: 핵심 전략 ════════════ -->
-<div class="slide dark" id="s3">
+<div class="slide dark" id="s3" data-notes="매크로의 핵심은 매진 열차를 포함한 전체 조회를 1~3초 간격으로 반복하다가 좌석이 발생하면 수 밀리초 이내에 자동 예매하는 것입니다. 사람의 반응 시간(수 초)을 완전히 제거하여 취소표 선점에서 압도적 우위를 가집니다.">
   <div class="slide-content">
     <h2 class="fade-up">01. 매크로 핵심 전략</h2>
     <div class="code-block fade-up">
@@ -454,7 +507,7 @@
 </div>
 
 <!-- ════════════ SLIDE 5: DynaPath 도입 배경 ════════════ -->
-<div class="slide" id="s4">
+<div class="slide" id="s4" data-notes="코레일은 2025년 초 DynaPath SDK를 도입하여 비공식 클라이언트를 차단했습니다. x-dynapath-m-token 헤더가 없는 요청은 MACRO ERROR 응답을 받습니다. 로그인, 조회, 예매 등 6개 핵심 API 경로가 보호 대상입니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. DynaPath Anti-bot 현황</h2>
     <div class="fade-up" style="background:var(--danger-light); border-left:4px solid var(--danger); padding:20px; border-radius:8px; margin-bottom:24px;">
@@ -483,7 +536,7 @@ h_msg_txt   = <span class="str">"원활한 서비스 이용을 위해 앱을 최
 </div>
 
 <!-- ════════════ SLIDE 6: 역공학 과정 ════════════ -->
-<div class="slide dark" id="s5">
+<div class="slide dark" id="s5" data-notes="우회는 4단계로 진행되었습니다. mitmproxy로 앱 트래픽을 캡처하고, APK를 디컴파일하여 토큰 생성 로직을 분석한 뒤, Python으로 재구현했습니다. 메인 API 서버에 TLS 피닝이 적용되지 않아 트래픽 캡처가 가능했다는 점이 첫 번째 취약점입니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. 역공학 과정</h2>
     <div class="timeline fade-up">
@@ -508,7 +561,7 @@ h_msg_txt   = <span class="str">"원활한 서비스 이용을 위해 앱을 최
 </div>
 
 <!-- ════════════ SLIDE 7: 토큰 구조 ════════════ -->
-<div class="slide" id="s6">
+<div class="slide" id="s6" data-notes="DynaPath 토큰은 bEeEP 프리픽스로 시작하며, 동적 키 인코딩과 본문 인코딩으로 구성됩니다. 매 요청마다 랜덤값과 타임스탬프가 변경되어 다른 토큰이 생성되지만, 생성 알고리즘 자체는 고정되어 있어 역공학이 가능했습니다. Sid는 별도의 AES-CBC 암호화 파라미터입니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. DynaPath 토큰 구조</h2>
     <div class="token-vis fade-up">
@@ -543,7 +596,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 8: 우회 성공 원인 ════════════ -->
-<div class="slide dark" id="s7">
+<div class="slide dark" id="s7" data-notes="우회가 가능했던 6가지 근본 원인입니다. 가장 핵심적인 문제는 토큰 생성이 서버 참여 없이 클라이언트에서만 이루어진다는 것입니다. 서버가 발급한 challenge 없이 클라이언트가 독자적으로 토큰을 만들 수 있으므로, 로직만 알면 누구나 유효한 토큰을 생성할 수 있습니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. 우회가 가능했던 근본 원인</h2>
     <div class="grid-3 fade-up" style="margin-top:16px;">
@@ -584,7 +637,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 9: 테스트 결과 종합 ════════════ -->
-<div class="slide" id="s8">
+<div class="slide" id="s8" data-notes="Claude AI 서브에이전트 4개를 병렬로 실행하여 4가지 테스트 스위트를 수행했습니다. 예매+취소, 다구간 조회, 반복 안정성, 토큰 TTL 모두 통과하여 19건 전체 PASS를 달성했습니다.">
   <div class="slide-content">
     <h2 class="fade-up">03. 테스트 결과 종합</h2>
     <p class="fade-up small">2026-04-08 15:57~16:02 | Claude 서브에이전트 4개 병렬 실행</p>
@@ -628,7 +681,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 10: 실제 예매 결과 ════════════ -->
-<div class="slide dark" id="s9">
+<div class="slide dark" id="s9" data-notes="테스트 중 코레일 서버에서 실제로 좌석이 배정된 예약 3건이 생성되었습니다. 실제 예약번호가 발급되고 금액이 산정된 진짜 예약입니다. 모든 예약은 결제 전 단계에서 취소되었습니다. 이는 매크로가 실제 환경에서 완전히 동작함을 증명합니다.">
   <div class="slide-content">
     <h2 class="fade-up">03. 실제 예매 성공 기록</h2>
     <p class="fade-up" style="color:#aaa;">테스트 중 코레일 서버에서 실제 좌석이 배정된 진짜 예약 3건</p>
@@ -666,7 +719,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 11: 다구간 / 안정성 ════════════ -->
-<div class="slide" id="s10">
+<div class="slide" id="s10" data-notes="서울-대전, 서울-광주송정, 용산-목포, 서울-강릉, 동대구-부산 5개 구간에서 내일/다음주 2개 날짜씩 총 10건의 조회를 수행했으며 전부 성공했습니다. 반복 조회 20회 연속 100% 성공, 세션은 4분 이상 유효함을 확인했습니다.">
   <div class="slide-content">
     <h2 class="fade-up">03. 다구간 조회 및 안정성</h2>
     <div class="grid-2 fade-up">
@@ -701,7 +754,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 12: 공격 벡터 ════════════ -->
-<div class="slide dark" id="s11">
+<div class="slide dark" id="s11" data-notes="이 매크로가 악의적으로 사용될 경우 발생할 수 있는 6가지 위협입니다. 가장 직접적인 피해는 일반 사용자의 예매 기회를 박탈하는 좌석 선점이며, 대량 예약 후 미결제로 좌석을 장시간 잠그는 것도 가능합니다.">
   <div class="slide-content">
     <h2 class="fade-up">04. 공격 벡터</h2>
     <div class="grid-3 fade-up" style="margin-top:16px;">
@@ -736,7 +789,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 13: 방어 대책 ════════════ -->
-<div class="slide" id="s12">
+<div class="slide" id="s12" data-notes="9가지 방어 대책을 효과와 구현 난이도 기준으로 우선순위를 매겼습니다. TLS 핑거프린팅은 서버 측만으로 즉시 적용 가능하여 1순위이며, App Attestation이 가장 근본적인 해결책이지만 앱 업데이트가 필요합니다.">
   <div class="slide-content">
     <h2 class="fade-up">05. 방어 대책 (9가지)</h2>
     <table class="fade-up">
@@ -755,7 +808,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 14: 핵심 방어 상세 ════════════ -->
-<div class="slide dark" id="s13">
+<div class="slide dark" id="s13" data-notes="가장 효과적인 4가지 방어 대책의 상세 설명입니다. TLS 핑거프린팅은 Python 라이브러리의 TLS 패턴과 Android User-Agent의 불일치를 탐지합니다. Challenge-Response는 DynaPath의 근본 취약점인 '클라이언트 독자 토큰 생성'을 해결합니다.">
   <div class="slide-content">
     <h2 class="fade-up">05. 핵심 방어 대책 상세</h2>
     <div class="grid-2 fade-up" style="margin-top:16px;">
@@ -784,7 +837,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 15: 적용 로드맵 ════════════ -->
-<div class="slide" id="s14">
+<div class="slide" id="s14" data-notes="3단계 로드맵을 제안합니다. Phase 1(즉시)은 TLS 핑거프린팅과 Rate Limiting으로 현재 매크로를 차단하고, Phase 2(1~3개월)는 Play Integrity API로 비공식 클라이언트를 원천 차단하며, Phase 3(3~6개월)는 행동 분석과 대기열로 장기 방어 체계를 구축합니다.">
   <div class="slide-content">
     <h2 class="fade-up">06. 적용 로드맵</h2>
     <div class="grid-3 fade-up" style="margin-top:24px;">
@@ -826,7 +879,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 16: 결론 ════════════ -->
-<div class="slide blue" id="s15">
+<div class="slide blue" id="s15" data-notes="핵심 메시지는 '클라이언트에 있는 비밀은 비밀이 아니다'입니다. DynaPath의 모든 보안 요소가 앱 내에 하드코딩되어 있어 역공학으로 완전히 우회되었습니다. 단일 방어가 아닌 다층 방어(Defense in Depth) 전략만이 효과적이며, 서버 측 검증 강화가 필수적입니다.">
   <div class="slide-content" style="text-align:center;">
     <h2 class="fade-up" style="font-size:2.4rem; color:#fff;">결론</h2>
     <div class="fade-up" style="max-width:800px; margin:0 auto; text-align:left; margin-top:32px;">
@@ -850,7 +903,12 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 <!-- ── 내비게이션 ── -->
 <div class="progress" id="progress"></div>
 <div class="slide-counter" id="counter"></div>
+<div class="notes-panel" id="notesPanel">
+  <div class="notes-title">SPEAKER NOTES</div>
+  <div id="notesContent"></div>
+</div>
 <div class="nav">
+  <button class="notes-btn" id="notesBtn" onclick="toggleNotes()" title="설명 보기 (N)">N</button>
   <button id="prevBtn" onclick="go(-1)">&#8592;</button>
   <button id="nextBtn" onclick="go(1)">&#8594;</button>
 </div>
@@ -859,6 +917,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
   const slides = document.querySelectorAll('.slide');
   const total = slides.length;
   let current = 0;
+  let notesVisible = false;
 
   function show(idx) {
     slides.forEach((s, i) => s.classList.toggle('active', i === idx));
@@ -866,6 +925,9 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
     document.getElementById('counter').textContent = (idx + 1) + ' / ' + total;
     document.getElementById('prevBtn').disabled = idx === 0;
     document.getElementById('nextBtn').disabled = idx === total - 1;
+    // Update notes content
+    const notes = slides[idx].getAttribute('data-notes') || '';
+    document.getElementById('notesContent').textContent = notes;
   }
 
   function go(dir) {
@@ -873,11 +935,18 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
     if (next >= 0 && next < total) { current = next; show(current); }
   }
 
+  function toggleNotes() {
+    notesVisible = !notesVisible;
+    document.getElementById('notesPanel').classList.toggle('visible', notesVisible);
+    document.getElementById('notesBtn').classList.toggle('active', notesVisible);
+  }
+
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
     if (e.key === 'Home') { current = 0; show(0); }
     if (e.key === 'End') { current = total - 1; show(current); }
+    if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
   });
 
   let touchStartX = 0;
