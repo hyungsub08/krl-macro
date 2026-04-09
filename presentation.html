@@ -444,10 +444,15 @@
           <p>방어 대책</p>
           <p class="small">9가지 다층 방어 전략</p>
         </div>
-        <div class="card">
+        <div class="card" style="margin-bottom:16px;">
           <h3 style="color:#64b5f6;">06</h3>
           <p>결론 및 권장안</p>
           <p class="small">우선순위별 적용 로드맵</p>
+        </div>
+        <div class="card">
+          <h3 style="color:#64b5f6;">07</h3>
+          <p>Claude Code 활용</p>
+          <p class="small">AI 에이전트 기반 개발·테스트 프로세스</p>
         </div>
       </div>
     </div>
@@ -961,7 +966,115 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
   </div>
 </div>
 
-<!-- ════════════ SLIDE 16: 결론 ════════════ -->
+<!-- ════════════ SLIDE 16: Claude Code 활용 ════════════ -->
+<div class="slide dark" id="s15a" data-notes="이 프로젝트의 전 과정은 Claude Code(Anthropic의 AI 코딩 에이전트)를 활용하여 수행되었습니다. Claude Code는 CLI 기반의 AI 에이전트로, 코드 생성뿐 아니라 파일 읽기/쓰기, 터미널 명령 실행, 웹 검색, 서브에이전트 생성 등이 가능합니다. 개발 과정에서 사용자는 자연어로 요구사항을 전달했고, Claude Code가 korail2 라이브러리의 GitHub README와 소스 코드를 자동으로 분석하여 API 구조를 파악했습니다. 이후 Flask 웹 앱, CLI 매크로, 통합 테스트 러너를 모두 생성했습니다. DynaPath anti-bot bypass는 GitHub Issue #53과 PR #54의 내용을 Claude Code가 fetch하여 분석한 뒤, 설치된 korail2 라이브러리에 직접 패치를 적용하는 방식으로 구현했습니다. 테스트 단계에서는 Claude Code의 서브에이전트 기능을 활용하여 4개의 테스트를 병렬로 실행하고 결과를 수집했습니다. 보안 분석 문서(ANALYSIS.md), 테스트 매뉴얼(TEST_GUIDE.md), 테스트 리포트(TEST_REPORT.md), 이 프레젠테이션까지 모두 Claude Code가 생성했습니다.">
+  <div class="slide-content">
+    <h2 class="fade-up" style="color:#fff;">07. Claude Code 활용</h2>
+    <p class="fade-up" style="color:#aaa; margin-bottom:24px;">본 프로젝트의 전 과정을 Anthropic Claude Code로 수행</p>
+    <div class="grid-2 fade-up">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">Claude Code란?</h3>
+          <p>Anthropic의 <strong>AI 코딩 에이전트</strong>. CLI에서 자연어로 지시하면 코드 생성, 파일 편집, 터미널 명령 실행, 웹 분석, 서브에이전트 생성이 가능합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color:#64b5f6;">사용 방식</h3>
+          <div class="code-block" style="font-size:0.8rem; margin-top:8px;">
+<span class="cmt"># 터미널에서 Claude Code 실행</span>
+$ <span class="fn">claude</span>
+
+<span class="cmt"># 자연어로 지시</span>
+> <span class="str">korail2 라이브러리를 활용해서
+  매진된 표를 자동으로 예매하는
+  웹 프로그램을 만들어 주세요</span>
+
+<span class="cmt"># Claude가 자동으로:</span>
+<span class="cmt"># 1. GitHub에서 korail2 API 분석</span>
+<span class="cmt"># 2. Flask 웹 앱 생성</span>
+<span class="cmt"># 3. Anti-bot bypass 패치 적용</span>
+<span class="cmt"># 4. 테스트 실행 및 버그 수정</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">이 프로젝트에서 Claude가 한 일</h3>
+          <ul>
+            <li>korail2 GitHub 소스 코드 자동 분석</li>
+            <li>Flask 웹 매크로 + CLI 매크로 생성</li>
+            <li>PR #54 (anti-bot bypass) 코드 fetch 및 패치 적용</li>
+            <li>cancel() 함수 버그 발견 및 수정</li>
+            <li>통합 테스트 러너 설계 및 구현</li>
+            <li>보안 분석 문서 (ANALYSIS.md)</li>
+            <li>테스트 매뉴얼 + 리포트 작성</li>
+            <li>이 프레젠테이션 생성</li>
+            <li>GitHub push + Vercel 배포</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 17: Claude 서브에이전트 테스트 ════════════ -->
+<div class="slide" id="s15b" data-notes="Claude Code의 서브에이전트(Sub-agent) 기능을 활용한 병렬 테스트 아키텍처입니다. Claude Code는 Agent 도구를 통해 독립적인 서브에이전트를 생성할 수 있으며, 각 에이전트는 별도의 컨텍스트에서 작업을 수행합니다. 이 프로젝트에서는 메인 에이전트(사용자와 대화하는 Claude)가 4개의 서브에이전트를 동시에 생성하여 테스트를 병렬 실행했습니다. 서브에이전트 1은 예매+취소 테스트(python3 test_runner.py --suite reserve), 서브에이전트 2는 다구간 조회(--suite routes), 서브에이전트 3은 반복 안정성(--suite stability), 서브에이전트 4는 토큰 TTL(--suite ttl)을 각각 전담했습니다. 각 에이전트는 --json 플래그로 구조화된 결과를 반환했고, 메인 에이전트가 결과를 수집하여 TEST_REPORT.md를 자동 생성했습니다. 이 방식의 장점은: (1) 순차 실행 시 ~6분 소요되는 전체 테스트를 ~4분으로 단축, (2) 각 에이전트가 독립적으로 오류를 분석하고 보고, (3) 메인 에이전트의 컨텍스트 윈도우를 테스트 로그로 오염시키지 않음, (4) 실패 시 해당 에이전트만 재실행 가능합니다. Claude Code의 서브에이전트는 Agent(description, prompt) 형태로 호출하며, 병렬 실행 시 한 메시지에 여러 Agent 호출을 포함하면 됩니다.">
+  <div class="slide-content">
+    <h2 class="fade-up">07. Claude 서브에이전트 테스트 아키텍처</h2>
+    <div class="fade-up" style="margin:24px 0;">
+      <div class="flow">
+        <div class="flow-box" style="background:#7c3aed; min-width:200px;">메인 에이전트<br><span style="font-size:0.8rem;font-weight:400;">사용자 대화 + 결과 수집</span></div>
+      </div>
+      <div class="flow" style="margin-top:8px;">
+        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 1<br><span style="font-size:0.75rem;font-weight:400;">예매+취소</span></div>
+        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 2<br><span style="font-size:0.75rem;font-weight:400;">다구간 조회</span></div>
+        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 3<br><span style="font-size:0.75rem;font-weight:400;">반복 안정성</span></div>
+        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 4<br><span style="font-size:0.75rem;font-weight:400;">토큰 TTL</span></div>
+      </div>
+    </div>
+    <div class="grid-2 fade-up">
+      <div>
+        <h3>에이전트 호출 코드</h3>
+        <div class="code-block" style="font-size:0.8rem;">
+<span class="cmt"># Claude Code 내부에서 4개 에이전트 병렬 생성</span>
+<span class="fn">Agent</span>({
+  description: <span class="str">"Test: reserve+cancel"</span>,
+  prompt: <span class="str">`test_runner.py --suite reserve
+           --json 실행 후 결과 보고`</span>
+})
+<span class="fn">Agent</span>({
+  description: <span class="str">"Test: multi-route"</span>,
+  prompt: <span class="str">`test_runner.py --suite routes
+           --json 실행 후 결과 보고`</span>
+})
+<span class="cmt">// ... 에이전트 3, 4도 동시 호출</span>
+        </div>
+      </div>
+      <div>
+        <h3>결과</h3>
+        <div class="grid-2" style="gap:12px;">
+          <div class="card" style="text-align:center; padding:16px;">
+            <div class="stat-number success" style="font-size:2rem;">4</div>
+            <p class="small">병렬 에이전트</p>
+          </div>
+          <div class="card" style="text-align:center; padding:16px;">
+            <div class="stat-number success" style="font-size:2rem;">19/19</div>
+            <p class="small">ALL PASS</p>
+          </div>
+          <div class="card" style="text-align:center; padding:16px;">
+            <div class="stat-number" style="font-size:2rem;">~4분</div>
+            <p class="small">전체 소요 시간</p>
+          </div>
+          <div class="card" style="text-align:center; padding:16px;">
+            <div class="stat-number" style="font-size:2rem;">1</div>
+            <p class="small">버그 발견+수정</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 18: 결론 ════════════ -->
 <div class="slide blue" id="s15" data-notes="핵심 메시지는 '클라이언트에 있는 비밀은 비밀이 아니다'입니다. DynaPath SDK의 인코딩 테이블(3FE9jgRD4K...), AES 키(2485dd54d9deaa36), 앱 서명 해시, 디바이스 ID 등 모든 보안 요소가 APK 바이너리에 하드코딩되어 있어 jadx 디컴파일 한 번으로 전부 추출되었습니다. 토큰 생성에 서버 참여가 없고, 앱 무결성 검증(Play Integrity)도 없어 Python으로 완전히 재현할 수 있었습니다. 실제 테스트에서 KTX 서울→부산 구간의 예매 3건이 성공하여 전 과정의 동작을 입증했습니다. korail2 라이브러리는 편의 도구일 뿐이며, HTTP 요청의 엔드포인트(smart.letskorail.com/classes/com.korail.mobile.*)와 파라미터 형식을 알면 어떤 언어로든 동일한 매크로를 구현할 수 있습니다. 따라서 특정 라이브러리를 차단하는 것은 무의미하며, TLS 핑거프린팅 → App Attestation → 행동 분석 → 대기열의 다층 방어(Defense in Depth) 전략만이 효과적입니다. 서버 측 검증 강화가 가장 시급한 과제입니다.">
   <div class="slide-content" style="text-align:center;">
     <h2 class="fade-up" style="font-size:2.4rem; color:#fff;">결론</h2>
@@ -975,6 +1088,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
         <li>20회 연속 조회, 4분 세션 유지 등 <strong>안정성 확인</strong></li>
         <li>korail2 라이브러리 없이도 동일 구현 가능 — <strong>라이브러리 차단은 무의미</strong></li>
         <li><strong>다층 방어(Defense in Depth)</strong> 전략만이 효과적</li>
+        <li>분석·개발·테스트·문서·배포 전 과정을 <strong>Claude Code</strong>로 수행</li>
       </ul>
     </div>
     <p class="fade-up" style="margin-top:48px; opacity:0.6; font-size:0.95rem;">감사합니다</p>
