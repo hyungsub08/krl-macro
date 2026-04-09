@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>코레일 자동 예매</title>
+  <style>
+    :root {
+      --primary: #0052a5;
+      --primary-dark: #003d7a;
+      --success: #2e7d32;
+      --danger: #c62828;
+      --warn: #f57f17;
+      --bg: #f5f7fa;
+      --card: #fff;
+      --border: #dde2e8;
+      --text: #1a1a1a;
+      --text-light: #6b7685;
+      --radius: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .header {
+      background: var(--primary);
+      color: #fff;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 82, 165, 0.1);
+    }
+
+    input[type="number"] {
+      width: 100%;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { background: #a0b4cc; cursor: not-allowed; }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover { background: #a31f1f; }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    /* 상태 표시 */
+    .status-bar {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .status-bar.running {
+      display: block;
+      background: #e3f2fd;
+      color: var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    .status-bar.success {
+      display: block;
+      background: #e8f5e9;
+      color: var(--success);
+    }
+
+    .status-bar.error {
+      display: block;
+      background: #ffebee;
+      color: var(--danger);
+    }
+
+    .status-bar.stopped {
+      display: block;
+      background: #fff3e0;
+      color: var(--warn);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* 예약 결과 */
+    .reservation-result {
+      display: none;
+      background: #e8f5e9;
+      border: 2px solid var(--success);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .reservation-result h3 {
+      color: var(--success);
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+    }
+
+    .reservation-result .info {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .reservation-result .rsv-id {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+
+    /* 로그 */
+    .log-area {
+      display: none;
+      background: #1a1f2e;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
+      font-size: 0.8rem;
+      line-height: 1.8;
+    }
+
+    .log-area .log-entry { color: #a0aec0; }
+    .log-entry .time { color: #63b3ed; }
+    .log-entry.success { color: #68d391; }
+    .log-entry.warn { color: #f6ad55; }
+    .log-entry.error { color: #fc8181; }
+
+    /* 역 교환 버튼 */
+    .swap-btn {
+      align-self: flex-end;
+      padding: 10px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: var(--text-light);
+      transition: all 0.2s;
+      flex: 0 0 auto;
+    }
+
+    .swap-btn:hover {
+      background: var(--bg);
+      color: var(--primary);
+    }
+
+    @media (max-width: 480px) {
+      .form-row { flex-direction: column; gap: 8px; }
+      .swap-btn { align-self: center; transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>코레일 자동 예매</h1>
+  <p>매진된 표를 자동으로 조회하여 예매합니다</p>
+</div>
+
+<div class="container">
+  <!-- 상태 표시 -->
+  <div class="status-bar" id="statusBar"></div>
+
+  <!-- 예약 결과 -->
+  <div class="reservation-result" id="reservationResult">
+    <h3>예매 성공!</h3>
+    <div class="rsv-id" id="rsvId"></div>
+    <div class="info" id="rsvInfo"></div>
+  </div>
+
+  <form id="macroForm">
+    <!-- 계정 -->
+    <div class="card">
+      <div class="card-title">계정 정보</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>아이디 (회원번호/전화번호/이메일)</label>
+          <input type="text" id="korailId" placeholder="010-1234-5678" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" id="korailPw" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- 열차 정보 -->
+    <div class="card">
+      <div class="card-title">열차 정보</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>출발역</label>
+          <select id="dep">
+            {% for s in stations %}
+            <option value="{{ s }}" {{ 'selected' if s == '서울' }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" class="swap-btn" onclick="swapStations()" title="역 교환">&#8646;</button>
+        <div class="form-group">
+          <label>도착역</label>
+          <select id="arr">
+            {% for s in stations %}
+            <option value="{{ s }}" {{ 'selected' if s == '부산' }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>출발 날짜</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label>출발 시간 (이후)</label>
+          <input type="time" id="time" value="06:00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>열차 종류</label>
+          <select id="trainType">
+            <option value="ALL">전체</option>
+            <option value="KTX" selected>KTX</option>
+            <option value="SAEMAEUL">ITX-새마을</option>
+            <option value="MUGUNGHWA">무궁화/누리로</option>
+            <option value="ITX_CHEONGCHUN">ITX-청춘</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>좌석 옵션</label>
+          <select id="seatOption">
+            <option value="GENERAL_FIRST">일반실 우선</option>
+            <option value="GENERAL_ONLY">일반실만</option>
+            <option value="SPECIAL_FIRST">특실 우선</option>
+            <option value="SPECIAL_ONLY">특실만</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>특정 열차번호 (선택, 콤마 구분)</label>
+          <input type="text" id="trainNumbers" placeholder="예: 001, 003">
+        </div>
+      </div>
+    </div>
+
+    <!-- 승객 / 옵션 -->
+    <div class="card">
+      <div class="card-title">승객 및 옵션</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>어른</label>
+          <input type="number" id="adult" value="1" min="0" max="9">
+        </div>
+        <div class="form-group">
+          <label>어린이</label>
+          <input type="number" id="child" value="0" min="0" max="9">
+        </div>
+        <div class="form-group">
+          <label>경로</label>
+          <input type="number" id="senior" value="0" min="0" max="9">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>조회 간격 (초)</label>
+          <input type="number" id="interval" value="1.0" min="0.5" max="30" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>최대 시도 (0=무제한)</label>
+          <input type="number" id="maxAttempts" value="0" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- 버튼 -->
+    <div class="btn-group">
+      <button type="submit" class="btn btn-primary" id="startBtn">예매 시작</button>
+      <button type="button" class="btn btn-danger" id="stopBtn" style="display:none" onclick="stopMacro()">중지</button>
+    </div>
+  </form>
+
+  <!-- 로그 -->
+  <div class="log-area" id="logArea"></div>
+</div>
+
+<script>
+  // 오늘 날짜 기본값
+  const dateInput = document.getElementById('date');
+  const today = new Date();
+  dateInput.value = today.toISOString().split('T')[0];
+  dateInput.min = dateInput.value;
+
+  let sessionId = null;
+  let polling = null;
+
+  function swapStations() {
+    const dep = document.getElementById('dep');
+    const arr = document.getElementById('arr');
+    [dep.value, arr.value] = [arr.value, dep.value];
+  }
+
+  document.getElementById('macroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const body = {
+      korailId: document.getElementById('korailId').value,
+      korailPw: document.getElementById('korailPw').value,
+      dep: document.getElementById('dep').value,
+      arr: document.getElementById('arr').value,
+      date: document.getElementById('date').value,
+      time: document.getElementById('time').value,
+      trainType: document.getElementById('trainType').value,
+      seatOption: document.getElementById('seatOption').value,
+      trainNumbers: document.getElementById('trainNumbers').value,
+      adult: document.getElementById('adult').value,
+      child: document.getElementById('child').value,
+      senior: document.getElementById('senior').value,
+      interval: document.getElementById('interval').value,
+      maxAttempts: document.getElementById('maxAttempts').value,
+    };
+
+    try {
+      const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      sessionId = data.sessionId;
+
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'block';
+      document.getElementById('logArea').style.display = 'block';
+      document.getElementById('reservationResult').style.display = 'none';
+      setFormDisabled(true);
+      updateStatus('running', '매크로 실행 중...');
+
+      polling = setInterval(pollStatus, 1000);
+    } catch (err) {
+      alert('시작 실패: ' + err.message);
+    }
+  });
+
+  async function pollStatus() {
+    if (!sessionId) return;
+
+    try {
+      const res = await fetch(`/api/status/${sessionId}`);
+      const data = await res.json();
+
+      // 로그 업데이트
+      const logArea = document.getElementById('logArea');
+      logArea.innerHTML = data.logs
+        .map(l => `<div class="log-entry ${l.level}"><span class="time">[${l.time}]</span> ${escapeHtml(l.msg)}</div>`)
+        .join('');
+      logArea.scrollTop = logArea.scrollHeight;
+
+      // 시도 횟수
+      if (data.status === 'running') {
+        updateStatus('running', `매크로 실행 중... (${data.attempt}회 시도)`);
+      }
+
+      // 완료 상태
+      if (data.status === 'success') {
+        clearInterval(polling);
+        updateStatus('success', '예매 성공!');
+        if (data.reservation) {
+          showReservation(data.reservation);
+        }
+        resetButtons();
+      } else if (data.status === 'error') {
+        clearInterval(polling);
+        updateStatus('error', '오류 발생 - 로그를 확인하세요');
+        resetButtons();
+      } else if (data.status === 'stopped') {
+        clearInterval(polling);
+        updateStatus('stopped', '매크로가 중지되었습니다');
+        resetButtons();
+      }
+    } catch (err) {
+      console.error('polling error:', err);
+    }
+  }
+
+  async function stopMacro() {
+    if (!sessionId) return;
+    await fetch(`/api/stop/${sessionId}`, { method: 'POST' });
+  }
+
+  function updateStatus(cls, msg) {
+    const bar = document.getElementById('statusBar');
+    bar.className = 'status-bar ' + cls;
+    bar.textContent = msg;
+  }
+
+  function showReservation(rsv) {
+    const el = document.getElementById('reservationResult');
+    el.style.display = 'block';
+    document.getElementById('rsvId').textContent = '예약번호: ' + rsv.rsv_id;
+    let info = rsv.train_info;
+    if (rsv.price) info += ` | ${Number(rsv.price).toLocaleString()}원`;
+    if (rsv.buy_limit_date) info += ` | 결제기한: ${rsv.buy_limit_date} ${rsv.buy_limit_time}`;
+    document.getElementById('rsvInfo').textContent = info;
+  }
+
+  function resetButtons() {
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('stopBtn').style.display = 'none';
+    setFormDisabled(false);
+    sessionId = null;
+  }
+
+  function setFormDisabled(disabled) {
+    document.querySelectorAll('#macroForm input, #macroForm select').forEach(el => {
+      el.disabled = disabled;
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

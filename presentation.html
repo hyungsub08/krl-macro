@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>코레일 자동 예매 매크로 - 보안 분석 보고</title>
+<style>
+  :root {
+    --primary: #0052a5;
+    --primary-light: #e8f0fe;
+    --danger: #c62828;
+    --danger-light: #ffebee;
+    --success: #2e7d32;
+    --success-light: #e8f5e9;
+    --warn: #f57f17;
+    --warn-light: #fff8e1;
+    --dark: #1a1a2e;
+    --text: #222;
+    --text-light: #666;
+    --bg: #f5f7fa;
+    --white: #fff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── 슬라이드 컨테이너 ── */
+  .deck {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    background: var(--white);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s, visibility 0.5s;
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .slide.dark {
+    background: var(--dark);
+    color: #eee;
+  }
+
+  .slide.blue {
+    background: linear-gradient(135deg, #0052a5, #003d7a);
+    color: #fff;
+  }
+
+  /* ── 타이포그래피 ── */
+  .slide-content {
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; line-height: 1.2; }
+  h2 { font-size: 2.0rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--primary); }
+  h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; }
+  p, li { font-size: 1.15rem; line-height: 1.8; }
+  .subtitle { font-size: 1.3rem; opacity: 0.8; margin-bottom: 8px; }
+  .small { font-size: 0.95rem; color: var(--text-light); }
+
+  .dark h2, .blue h2 { color: #fff; }
+  .dark .small { color: #999; }
+
+  ul { list-style: none; padding: 0; }
+  ul li { padding: 6px 0; padding-left: 24px; position: relative; }
+  ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+  .dark ul li::before, .blue ul li::before { background: #64b5f6; }
+
+  /* ── 테이블 ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 1.05rem;
+  }
+
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  th {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  tr:nth-child(even) { background: #f8f9fa; }
+  tr:hover { background: var(--primary-light); }
+
+  .dark th { background: #2a2a4a; }
+  .dark tr:nth-child(even) { background: #1e1e36; }
+  .dark tr:hover { background: #2a2a4a; }
+  .dark td { border-color: #333; color: #ddd; }
+
+  /* ── 뱃지 ── */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .badge.pass { background: var(--success-light); color: var(--success); }
+  .badge.fail { background: var(--danger-light); color: var(--danger); }
+  .badge.warn { background: var(--warn-light); color: var(--warn); }
+
+  /* ── 코드 블록 ── */
+  .code-block {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 24px;
+    border-radius: 12px;
+    font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .code-block .kw { color: #cba6f7; }
+  .code-block .str { color: #a6e3a1; }
+  .code-block .cmt { color: #6c7086; }
+  .code-block .fn { color: #89b4fa; }
+  .code-block .num { color: #fab387; }
+
+  /* ── 플로우 다이어그램 ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 24px 0;
+  }
+  .flow-box {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: center;
+    min-width: 140px;
+  }
+  .flow-box.danger { background: var(--danger); }
+  .flow-box.success { background: var(--success); }
+  .flow-box.warn { background: #e65100; }
+  .flow-arrow { font-size: 1.5rem; color: var(--text-light); }
+  .dark .flow-arrow { color: #666; }
+
+  /* ── 그리드 ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: var(--white);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .dark .card { background: #1e1e36; border-color: #333; }
+  .card h3 { color: var(--primary); margin-bottom: 8px; }
+  .dark .card h3 { color: #64b5f6; }
+
+  .stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+  }
+  .dark .stat-number { color: #64b5f6; }
+  .stat-number.success { color: var(--success); }
+  .stat-number.danger { color: var(--danger); }
+
+  /* ── 타임라인 ── */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+  .timeline-item {
+    position: relative;
+    padding: 12px 0;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 18px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid var(--white);
+  }
+  .dark .timeline-item::before { border-color: var(--dark); }
+
+  /* ── 토큰 시각화 ── */
+  .token-vis {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 20px 0;
+    font-family: 'SF Mono', monospace;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .token-part {
+    padding: 14px 16px;
+    text-align: center;
+    color: #fff;
+    font-weight: 600;
+  }
+  .token-part .label {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+
+  /* ── 내비게이션 ── */
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav button:hover { transform: scale(1.1); background: #003d7a; }
+  .nav button:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  .progress {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: var(--primary);
+    transition: width 0.4s;
+    z-index: 100;
+  }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 38px;
+    left: 40px;
+    font-size: 0.9rem;
+    color: #999;
+    font-weight: 600;
+    z-index: 100;
+  }
+
+  /* ── 애니메이션 ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  .active .fade-up { opacity: 1; transform: translateY(0); }
+  .active .fade-up:nth-child(2) { transition-delay: 0.15s; }
+  .active .fade-up:nth-child(3) { transition-delay: 0.3s; }
+  .active .fade-up:nth-child(4) { transition-delay: 0.45s; }
+
+  /* ── 반응형 ── */
+  @media (max-width: 900px) {
+    .slide { padding: 30px 24px; }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.5rem; }
+    p, li { font-size: 1rem; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ════════════ SLIDE 1: 표지 ════════════ -->
+<div class="slide blue active" id="s0">
+  <div class="slide-content" style="text-align:center;">
+    <div class="fade-up">
+      <p class="subtitle">보안 취약점 분석 보고</p>
+      <h1 style="font-size:3.2rem;">코레일 승차권 예매 시스템<br>자동 매크로 분석</h1>
+      <p style="margin-top:32px; font-size:1.1rem; opacity:0.7;">Anti-bot 우회 기법 분석 및 방어 대책 제안</p>
+      <p style="margin-top:48px; font-size:1rem; opacity:0.6;">2026.04.08</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 2: 목차 ════════════ -->
+<div class="slide dark" id="s1">
+  <div class="slide-content">
+    <h2 class="fade-up">목차</h2>
+    <div class="grid-2 fade-up" style="margin-top:20px;">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">01</h3>
+          <p>매크로 동작 원리</p>
+          <p class="small">전체 흐름, 기술 구성, 핵심 전략</p>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">02</h3>
+          <p>DynaPath Anti-bot 우회 분석</p>
+          <p class="small">역공학 과정, 토큰 구조, 우회 원인</p>
+        </div>
+        <div class="card">
+          <h3 style="color:#64b5f6;">03</h3>
+          <p>실제 테스트 결과</p>
+          <p class="small">로그인, 조회, 예매, 안정성, TTL</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">04</h3>
+          <p>공격 벡터</p>
+          <p class="small">좌석 선점, 대량 예약, 서버 부하</p>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:#64b5f6;">05</h3>
+          <p>방어 대책</p>
+          <p class="small">9가지 다층 방어 전략</p>
+        </div>
+        <div class="card">
+          <h3 style="color:#64b5f6;">06</h3>
+          <p>결론 및 권장안</p>
+          <p class="small">우선순위별 적용 로드맵</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 3: 매크로 동작 흐름 ════════════ -->
+<div class="slide" id="s2">
+  <div class="slide-content">
+    <h2 class="fade-up">01. 매크로 동작 흐름</h2>
+    <div class="flow fade-up">
+      <div class="flow-box">사용자 입력<br><span style="font-size:0.8rem;font-weight:400;">웹 UI</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Flask 서버<br><span style="font-size:0.8rem;font-weight:400;">세션 관리</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box warn">DynaPath 토큰 생성<br><span style="font-size:0.8rem;font-weight:400;">Anti-bot 우회</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">코레일 API<br><span style="font-size:0.8rem;font-weight:400;">모바일 서버</span></div>
+    </div>
+    <div class="flow fade-up" style="margin-top:8px;">
+      <div class="flow-box" style="background:#546e7a;">반복 조회<br><span style="font-size:0.8rem;font-weight:400;">매진 포함</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box" style="background:#546e7a;">좌석 감지<br><span style="font-size:0.8rem;font-weight:400;">취소표 발생</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box success">즉시 예매<br><span style="font-size:0.8rem;font-weight:400;">수 ms 이내</span></div>
+    </div>
+    <div class="fade-up" style="margin-top:32px;">
+      <table>
+        <tr><th>계층</th><th>기술</th><th>역할</th></tr>
+        <tr><td>프론트엔드</td><td>HTML / JS</td><td>사용자 입력, 실시간 로그</td></tr>
+        <tr><td>백엔드</td><td>Flask (Python)</td><td>REST API, 매크로 세션 관리</td></tr>
+        <tr><td>코레일 통신</td><td>korail2 + 패치</td><td>모바일 API 역공학 호출</td></tr>
+        <tr><td>Anti-bot 우회</td><td>DynaPathMasterEngine</td><td>x-dynapath-m-token 생성</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 4: 핵심 전략 ════════════ -->
+<div class="slide dark" id="s3">
+  <div class="slide-content">
+    <h2 class="fade-up">01. 매크로 핵심 전략</h2>
+    <div class="code-block fade-up">
+<span class="kw">while</span> <span class="num">True</span>:
+    <span class="cmt"># 매 요청마다 새로운 DynaPath 토큰 생성</span>
+    trains = search(include_no_seats=<span class="num">True</span>)  <span class="cmt"># 매진 포함 전체 조회</span>
+    <span class="kw">for</span> train <span class="kw">in</span> trains:
+        <span class="kw">if</span> train.<span class="fn">has_seat</span>():              <span class="cmt"># 좌석 발생 감지</span>
+            <span class="fn">reserve</span>(train)                  <span class="cmt"># 즉시 예매</span>
+            <span class="kw">return</span>                          <span class="cmt"># 성공 시 종료</span>
+    <span class="fn">sleep</span>(<span class="num">interval</span>)                     <span class="cmt"># 1~3초 대기 후 재시도</span>
+    </div>
+    <div class="grid-2 fade-up" style="margin-top:24px;">
+      <div class="card">
+        <h3>속도 우위</h3>
+        <p>사람의 새로고침(수 초) 대비 1초 간격 자동 조회. 좌석 발견 시 수 ms 내 예매 API 호출로 반응 시간 제거.</p>
+      </div>
+      <div class="card">
+        <h3>지속성</h3>
+        <p>세션 만료 시 자동 재로그인. 24시간 무중단 동작 가능. 매 요청마다 새 DynaPath 토큰 생성.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 5: DynaPath 도입 배경 ════════════ -->
+<div class="slide" id="s4">
+  <div class="slide-content">
+    <h2 class="fade-up">02. DynaPath Anti-bot 현황</h2>
+    <div class="fade-up" style="background:var(--danger-light); border-left:4px solid var(--danger); padding:20px; border-radius:8px; margin-bottom:24px;">
+      <h3 style="color:var(--danger); margin-bottom:8px;">2025년 초 도입 후 차단 응답</h3>
+      <div class="code-block" style="background:#2a1a1a; margin:12px 0 0;">
+status_code = <span class="num">200</span>
+strResult   = <span class="str">"FAIL"</span>
+h_msg_cd    = <span class="str">"MACRO ERROR"</span>
+h_msg_txt   = <span class="str">"원활한 서비스 이용을 위해 앱을 최신 버전으로
+               업데이트해 주시기 바랍니다."</span>
+      </div>
+    </div>
+    <div class="fade-up">
+      <h3>보호 대상 API 경로 (6개)</h3>
+      <table>
+        <tr><th>경로</th><th>기능</th></tr>
+        <tr><td><code>com.korail.mobile.login.Login</code></td><td>로그인</td></tr>
+        <tr><td><code>com.korail.mobile.seatMovie.ScheduleView</code></td><td>열차 조회</td></tr>
+        <tr><td><code>com.korail.mobile.certification.TicketReservation</code></td><td>예매</td></tr>
+        <tr><td><code>com.korail.mobile.seatMovie.ScheduleViewSpecial</code></td><td>특실 조회</td></tr>
+        <tr><td><code>com.korail.mobile.nonMember.NonMemTicket</code></td><td>비회원 예매</td></tr>
+        <tr><td><code>com.korail.mobile.trn.prcFare.do</code></td><td>운임 조회</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 6: 역공학 과정 ════════════ -->
+<div class="slide dark" id="s5">
+  <div class="slide-content">
+    <h2 class="fade-up">02. 역공학 과정</h2>
+    <div class="timeline fade-up">
+      <div class="timeline-item">
+        <h3 style="color:#64b5f6;">1단계: 트래픽 캡처</h3>
+        <p>mitmproxy로 코레일 앱의 HTTP 트래픽 가로채기. <code>smart.letskorail.com</code>에 TLS 피닝 미적용되어 캡처 가능. <code>x-dynapath-m-token</code> 헤더와 <code>Sid</code> 파라미터 확인.</p>
+      </div>
+      <div class="timeline-item">
+        <h3 style="color:#64b5f6;">2단계: APK 디컴파일</h3>
+        <p>jadx/apktool로 코레일 앱 디컴파일. DynaPath SDK 클래스 식별. 인코딩 테이블, AES 키, 알고리즘 추출.</p>
+      </div>
+      <div class="timeline-item">
+        <h3 style="color:#64b5f6;">3단계: Python 재구현</h3>
+        <p><code>DynaPathMasterEngine</code> 클래스로 토큰 생성 로직 재구현. 매 요청마다 유효한 토큰 자동 생성.</p>
+      </div>
+      <div class="timeline-item">
+        <h3 style="color:#64b5f6;">4단계: 검증</h3>
+        <p>로그인, 조회, 예매, 취소 전 과정에서 MACRO ERROR 없이 정상 동작 확인.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 7: 토큰 구조 ════════════ -->
+<div class="slide" id="s6">
+  <div class="slide-content">
+    <h2 class="fade-up">02. DynaPath 토큰 구조</h2>
+    <div class="token-vis fade-up">
+      <div class="token-part" style="background:#7c3aed;"><span class="label">매직 프리픽스</span>bEeEP</div>
+      <div class="token-part" style="background:#6d28d9;"><span class="label">길이 표시</span>X</div>
+      <div class="token-part" style="background:#2563eb; flex:2;"><span class="label">키 인코딩 (기본 테이블)</span>v1+AB3X+1711234568123</div>
+      <div class="token-part" style="background:#0891b2; flex:4;"><span class="label">본문 인코딩 (커스텀 테이블)</span>ai=com.korail.talk&di=...&ts=...&dm=SM-S928N</div>
+    </div>
+    <div class="grid-2 fade-up">
+      <div>
+        <h3>토큰 생성 과정</h3>
+        <ul>
+          <li>랜덤 4자리 + 타임스탬프로 <strong>동적 키</strong> 생성</li>
+          <li>키를 62문자 테이블로 <strong>base-30 인코딩</strong></li>
+          <li>키에서 정수값을 파생하여 <strong>커스텀 테이블</strong> 생성</li>
+          <li>디바이스 메타데이터를 커스텀 테이블로 인코딩</li>
+          <li>매 요청마다 다른 토큰 생성</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Sid 생성</h3>
+        <div class="code-block" style="font-size:0.85rem;">
+plaintext = <span class="str">f"AD{timestamp_ms}"</span>
+key = iv = <span class="str">b"2485dd54d9deaa36"</span>
+Sid = <span class="fn">AES_CBC</span>(plaintext, key)
+Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
+        </div>
+        <p class="small" style="margin-top:12px;">AES 키 16바이트가 앱 내에 하드코딩되어 있으며, 키와 IV가 동일합니다.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 8: 우회 성공 원인 ════════════ -->
+<div class="slide dark" id="s7">
+  <div class="slide-content">
+    <h2 class="fade-up">02. 우회가 가능했던 근본 원인</h2>
+    <div class="grid-3 fade-up" style="margin-top:16px;">
+      <div class="card">
+        <div class="stat-number danger">1</div>
+        <h3 style="color:var(--danger);">클라이언트 측 토큰 생성</h3>
+        <p>서버 참여 없이 클라이언트만으로 토큰 생성 가능. 로직을 알면 누구나 유효한 토큰 생성.</p>
+      </div>
+      <div class="card">
+        <div class="stat-number danger">2</div>
+        <h3 style="color:var(--danger);">하드코딩된 비밀값</h3>
+        <p>인코딩 테이블, AES 키, 앱 서명 등이 APK에 하드코딩. 디컴파일로 즉시 추출.</p>
+      </div>
+      <div class="card">
+        <div class="stat-number danger">3</div>
+        <h3 style="color:var(--danger);">앱 무결성 미검증</h3>
+        <p>Play Integrity API 등 외부 검증 없음. su=false, emu=false 등 자체 보고값은 위조 가능.</p>
+      </div>
+    </div>
+    <div class="grid-3 fade-up" style="margin-top:16px;">
+      <div class="card">
+        <div class="stat-number danger">4</div>
+        <h3 style="color:var(--danger);">TLS 피닝 미적용</h3>
+        <p>메인 API 서버에 인증서 피닝 미적용. mitmproxy로 트래픽 캡처 가능.</p>
+      </div>
+      <div class="card">
+        <div class="stat-number danger">5</div>
+        <h3 style="color:var(--danger);">고정 알고리즘</h3>
+        <p>앱 업데이트 없이 알고리즘 변경 불가. 한 번 역공학하면 장기간 유효.</p>
+      </div>
+      <div class="card">
+        <div class="stat-number danger">6</div>
+        <h3 style="color:var(--danger);">서버 측 심층 검증 부재</h3>
+        <p>토큰 형식만 검증. 타임스탬프 유효 범위, device_id 실존 여부 미검증.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 9: 테스트 결과 종합 ════════════ -->
+<div class="slide" id="s8">
+  <div class="slide-content">
+    <h2 class="fade-up">03. 테스트 결과 종합</h2>
+    <p class="fade-up small">2026-04-08 15:57~16:02 | Claude 서브에이전트 4개 병렬 실행</p>
+    <div class="grid-2 fade-up" style="margin-top:24px;">
+      <div class="card" style="text-align:center; border:2px solid var(--success);">
+        <div class="stat-number success" style="font-size:4rem;">19/19</div>
+        <h3 style="color:var(--success);">ALL PASS</h3>
+        <p>전체 테스트 통과</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>스위트</th><th>결과</th><th>건수</th><th>시간</th></tr>
+          <tr>
+            <td>예매 + 즉시 취소</td>
+            <td><span class="badge pass">PASS</span></td>
+            <td>4/4</td>
+            <td>~15초</td>
+          </tr>
+          <tr>
+            <td>다구간 조회</td>
+            <td><span class="badge pass">PASS</span></td>
+            <td>11/11</td>
+            <td>~17초</td>
+          </tr>
+          <tr>
+            <td>반복 조회 안정성</td>
+            <td><span class="badge pass">PASS</span></td>
+            <td>20회 연속</td>
+            <td>~79초</td>
+          </tr>
+          <tr>
+            <td>토큰 TTL</td>
+            <td><span class="badge pass">PASS</span></td>
+            <td>240초간</td>
+            <td>~252초</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 10: 실제 예매 결과 ════════════ -->
+<div class="slide dark" id="s9">
+  <div class="slide-content">
+    <h2 class="fade-up">03. 실제 예매 성공 기록</h2>
+    <p class="fade-up" style="color:#aaa;">테스트 중 코레일 서버에서 실제 좌석이 배정된 진짜 예약 3건</p>
+    <table class="fade-up" style="margin-top:24px;">
+      <tr><th>회차</th><th>예약번호</th><th>열차</th><th>금액</th><th>예매</th><th>취소</th></tr>
+      <tr>
+        <td>1차</td>
+        <td><code>320260419021093</code></td>
+        <td>KTX 015호 서울→부산</td>
+        <td>59,800원</td>
+        <td><span class="badge pass">성공</span></td>
+        <td><span class="badge warn">기한만료</span></td>
+      </tr>
+      <tr>
+        <td>2차</td>
+        <td><code>320260419241827</code></td>
+        <td>KTX 011호 서울→부산</td>
+        <td>83,700원</td>
+        <td><span class="badge pass">성공</span></td>
+        <td><span class="badge warn">기한만료</span></td>
+      </tr>
+      <tr>
+        <td>3차</td>
+        <td><code>320260419294600</code></td>
+        <td>KTX 011호 서울→부산</td>
+        <td>56,800원</td>
+        <td><span class="badge pass">성공</span></td>
+        <td><span class="badge pass">즉시 취소</span></td>
+      </tr>
+    </table>
+    <div class="fade-up" style="margin-top:24px; background:#1e3a1e; padding:16px; border-radius:8px; border-left:4px solid var(--success);">
+      <p><strong>결론:</strong> DynaPath anti-bot 우회를 통한 로그인 &rarr; 조회 &rarr; 예매 &rarr; 취소 전 과정이 실제 환경에서 정상 동작함을 확인.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 11: 다구간 / 안정성 ════════════ -->
+<div class="slide" id="s10">
+  <div class="slide-content">
+    <h2 class="fade-up">03. 다구간 조회 및 안정성</h2>
+    <div class="grid-2 fade-up">
+      <div>
+        <h3>다구간 조회 (5개 구간 x 2일)</h3>
+        <table style="font-size:0.95rem;">
+          <tr><th>구간</th><th>내일</th><th>다음주</th></tr>
+          <tr><td>서울 → 대전</td><td>1/10</td><td>6/10</td></tr>
+          <tr><td>서울 → 광주송정</td><td>9/10</td><td>9/10</td></tr>
+          <tr><td>용산 → 목포</td><td>10/10</td><td>10/10</td></tr>
+          <tr><td>서울 → 강릉</td><td>9/10</td><td>8/10</td></tr>
+          <tr><td>동대구 → 부산</td><td>10/10</td><td>10/10</td></tr>
+        </table>
+        <p class="small" style="margin-top:8px;">10건 전부 성공, MACRO ERROR 0건</p>
+      </div>
+      <div>
+        <h3>반복 조회 안정성</h3>
+        <div class="card" style="text-align:center; margin-bottom:16px;">
+          <div class="stat-number success">20/20</div>
+          <p>연속 조회 성공률 <strong>100%</strong></p>
+          <p class="small">3초 간격, 67초간 실행</p>
+        </div>
+        <h3>세션 TTL</h3>
+        <div class="card" style="text-align:center;">
+          <div class="stat-number">240초+</div>
+          <p>세션 유효 시간</p>
+          <p class="small">30초 간격 9회 조회, 만료 없음</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 12: 공격 벡터 ════════════ -->
+<div class="slide dark" id="s11">
+  <div class="slide-content">
+    <h2 class="fade-up">04. 공격 벡터</h2>
+    <div class="grid-3 fade-up" style="margin-top:16px;">
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">좌석 선점</h3>
+        <p>일반 사용자보다 빠르게 취소표를 가로챔. 수 ms 이내 자동 예매.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">대량 예약</h3>
+        <p>여러 세션을 동시에 실행하여 다수의 좌석 선점 가능.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">예약 후 미결제</h3>
+        <p>좌석을 선점한 뒤 미결제로 다른 사용자의 기회 차단.</p>
+      </div>
+    </div>
+    <div class="grid-3 fade-up" style="margin-top:16px;">
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">서버 부하</h3>
+        <p>1~3초 간격 반복 조회로 API 서버에 과부하 유발.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">계정 도용</h3>
+        <p>타인의 계정 정보를 입력하여 무단 예매 가능.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--danger);">
+        <h3 style="color:var(--danger);">우회 기법 확산</h3>
+        <p>토큰 생성 로직이 공개되면 대규모 봇 공격 가능.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 13: 방어 대책 ════════════ -->
+<div class="slide" id="s12">
+  <div class="slide-content">
+    <h2 class="fade-up">05. 방어 대책 (9가지)</h2>
+    <table class="fade-up">
+      <tr><th>순위</th><th>대책</th><th>효과</th><th>난이도</th></tr>
+      <tr><td><strong>1</strong></td><td>TLS 핑거프린팅 (JA3/JA4)</td><td>Python 기반 봇 즉시 차단</td><td><span class="badge warn">중간</span></td></tr>
+      <tr><td><strong>2</strong></td><td>DynaPath 토큰 키 동적 교체</td><td>기존 우회 코드 무력화</td><td><span class="badge pass">낮음</span></td></tr>
+      <tr><td><strong>3</strong></td><td>App Attestation (Play Integrity)</td><td>비공식 클라이언트 원천 차단</td><td><span class="badge warn">중간</span></td></tr>
+      <tr><td><strong>4</strong></td><td>TLS Certificate Pinning 전면 적용</td><td>트래픽 분석 차단</td><td><span class="badge pass">낮음</span></td></tr>
+      <tr><td><strong>5</strong></td><td>API Rate Limiting</td><td>대량 조회/예매 차단</td><td><span class="badge pass">낮음</span></td></tr>
+      <tr><td><strong>6</strong></td><td>예매 시 CAPTCHA</td><td>자동 예매 차단</td><td><span class="badge pass">낮음</span></td></tr>
+      <tr><td><strong>7</strong></td><td>행동 패턴 분석</td><td>저속 매크로 탐지</td><td><span class="badge warn">중간</span></td></tr>
+      <tr><td><strong>8</strong></td><td>대기열 / 랜덤 배정</td><td>속도 우위 원천 차단</td><td><span class="badge fail">높음</span></td></tr>
+      <tr><td><strong>9</strong></td><td>예매 정책 강화</td><td>악용 피해 최소화</td><td><span class="badge pass">낮음</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 14: 핵심 방어 상세 ════════════ -->
+<div class="slide dark" id="s13">
+  <div class="slide-content">
+    <h2 class="fade-up">05. 핵심 방어 대책 상세</h2>
+    <div class="grid-2 fade-up" style="margin-top:16px;">
+      <div class="card" style="border-top:3px solid #64b5f6;">
+        <h3>TLS 핑거프린팅</h3>
+        <p>Python requests의 TLS 핸드셰이크 패턴은 실제 Android 기기와 다릅니다. User-Agent는 <code>Android 13</code>이지만 JA3 핑거프린트는 Python/urllib3의 것.</p>
+        <p style="margin-top:8px;"><strong>서버 측만으로 즉시 탐지 가능</strong></p>
+      </div>
+      <div class="card" style="border-top:3px solid #64b5f6;">
+        <h3>App Attestation</h3>
+        <p><strong>Play Integrity API</strong>로 앱 바이너리 무결성과 실행 환경을 Google 서버에서 직접 검증. 역공학된 Python 클라이언트는 유효한 attestation을 생성할 수 없음.</p>
+        <p style="margin-top:8px;"><strong>가장 근본적인 해결책</strong></p>
+      </div>
+      <div class="card" style="border-top:3px solid #64b5f6;">
+        <h3>Challenge-Response</h3>
+        <p>서버가 매 요청마다 고유 nonce를 발급. 클라이언트가 nonce를 포함하여 토큰 생성. 클라이언트 독립 토큰 생성 불가.</p>
+        <p style="margin-top:8px;"><strong>DynaPath 근본 취약점 해결</strong></p>
+      </div>
+      <div class="card" style="border-top:3px solid #64b5f6;">
+        <h3>대기열 시스템</h3>
+        <p>취소표 발생 시 즉시 공개하지 않고 30초간 모인 요청 중 <strong>랜덤 배정</strong>. 속도 우위를 원천적으로 무력화.</p>
+        <p style="margin-top:8px;"><strong>매크로 존재 의미 자체를 제거</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 15: 적용 로드맵 ════════════ -->
+<div class="slide" id="s14">
+  <div class="slide-content">
+    <h2 class="fade-up">06. 적용 로드맵</h2>
+    <div class="grid-3 fade-up" style="margin-top:24px;">
+      <div class="card" style="border-top:4px solid var(--danger); text-align:center;">
+        <p class="small" style="margin-bottom:8px;">즉시 적용</p>
+        <div class="stat-number danger" style="font-size:2rem;">Phase 1</div>
+        <h3 style="margin-top:12px;">긴급 대응</h3>
+        <ul style="text-align:left; margin-top:12px;">
+          <li>TLS 핑거프린팅 도입</li>
+          <li>DynaPath 키 주기적 교체</li>
+          <li>API Rate Limiting</li>
+          <li>TLS 피닝 전면 적용</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:4px solid var(--warn); text-align:center;">
+        <p class="small" style="margin-bottom:8px;">1~3개월</p>
+        <div class="stat-number" style="font-size:2rem; color:var(--warn);">Phase 2</div>
+        <h3 style="margin-top:12px;">근본 대책</h3>
+        <ul style="text-align:left; margin-top:12px;">
+          <li>Play Integrity API 도입</li>
+          <li>Challenge-Response 전환</li>
+          <li>예매 시 CAPTCHA</li>
+          <li>예매 정책 강화</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:4px solid var(--success); text-align:center;">
+        <p class="small" style="margin-bottom:8px;">3~6개월</p>
+        <div class="stat-number success" style="font-size:2rem;">Phase 3</div>
+        <h3 style="margin-top:12px;">장기 방어</h3>
+        <ul style="text-align:left; margin-top:12px;">
+          <li>행동 패턴 분석 시스템</li>
+          <li>대기열 / 랜덤 배정</li>
+          <li>이상 탐지 ML 모델</li>
+          <li>지속 모니터링 체계</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 16: 결론 ════════════ -->
+<div class="slide blue" id="s15">
+  <div class="slide-content" style="text-align:center;">
+    <h2 class="fade-up" style="font-size:2.4rem; color:#fff;">결론</h2>
+    <div class="fade-up" style="max-width:800px; margin:0 auto; text-align:left; margin-top:32px;">
+      <div style="background:rgba(255,255,255,0.15); padding:24px; border-radius:12px; margin-bottom:20px;">
+        <h3 style="color:#ffd54f; margin-bottom:8px;">"클라이언트에 있는 비밀은 비밀이 아니다"</h3>
+        <p style="font-size:1.1rem;">DynaPath SDK의 토큰 생성 로직이 클라이언트에만 존재하고, 비밀값이 앱에 하드코딩되어 있어 역공학으로 완전히 우회되었습니다.</p>
+      </div>
+      <ul style="font-size:1.15rem;">
+        <li>실제 예매 3건 성공으로 <strong>전 과정 동작 확인</strong></li>
+        <li>20회 연속 조회, 4분 세션 유지 등 <strong>안정성 확인</strong></li>
+        <li>korail2 라이브러리 없이도 동일 구현 가능 — <strong>라이브러리 차단은 무의미</strong></li>
+        <li><strong>다층 방어(Defense in Depth)</strong> 전략만이 효과적</li>
+      </ul>
+    </div>
+    <p class="fade-up" style="margin-top:48px; opacity:0.6; font-size:0.95rem;">감사합니다</p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── 내비게이션 ── -->
+<div class="progress" id="progress"></div>
+<div class="slide-counter" id="counter"></div>
+<div class="nav">
+  <button id="prevBtn" onclick="go(-1)">&#8592;</button>
+  <button id="nextBtn" onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  function show(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    document.getElementById('progress').style.width = ((idx + 1) / total * 100) + '%';
+    document.getElementById('counter').textContent = (idx + 1) + ' / ' + total;
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').disabled = idx === total - 1;
+  }
+
+  function go(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < total) { current = next; show(current); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') { current = 0; show(0); }
+    if (e.key === 'End') { current = total - 1; show(current); }
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) go(diff > 0 ? 1 : -1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>
