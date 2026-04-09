@@ -274,6 +274,7 @@
     display: flex;
     gap: 12px;
     z-index: 100;
+    transition: bottom 0.35s ease;
   }
   .nav button {
     width: 48px;
@@ -305,6 +306,7 @@
   .slide-counter {
     position: fixed;
     bottom: 38px;
+    transition: bottom 0.35s ease;
     left: 40px;
     font-size: 0.9rem;
     color: #999;
@@ -329,18 +331,18 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(20, 20, 40, 0.95);
+    background: rgba(20, 20, 40, 0.97);
     color: #ddd;
     padding: 24px 40px 32px;
-    font-size: 1.05rem;
-    line-height: 1.8;
-    max-height: 220px;
+    font-size: 1.0rem;
+    line-height: 1.9;
+    max-height: 260px;
     overflow-y: auto;
-    z-index: 90;
+    z-index: 200;
     transform: translateY(100%);
     transition: transform 0.35s ease;
     border-top: 3px solid var(--primary);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
   }
 
   .notes-panel.visible {
@@ -355,6 +357,11 @@
     color: #64b5f6;
     margin-bottom: 8px;
   }
+
+  /* nav/counter shift up when notes are visible */
+  body.notes-open .nav { bottom: 270px; }
+  body.notes-open .slide-counter { bottom: 278px; }
+  body.notes-open .progress { bottom: 260px; }
 
   .notes-btn {
     width: 48px;
@@ -393,7 +400,7 @@
 <div class="deck" id="deck">
 
 <!-- ════════════ SLIDE 1: 표지 ════════════ -->
-<div class="slide blue active" id="s0" data-notes="본 보고서는 코레일 승차권 예매 시스템의 보안 취약점을 분석한 결과입니다. 화이트해킹 관점에서 자동 예매 매크로를 구현하고, 실제 예매까지 성공함으로써 현행 anti-bot 방어의 한계를 입증했습니다.">
+<div class="slide blue active" id="s0" data-notes="본 보고서는 코레일 승차권 예매 시스템의 보안 취약점을 화이트해킹 관점에서 분석한 결과입니다. 코레일 모바일 앱(com.korail.talk)이 사용하는 비공개 REST API(smart.letskorail.com:443)를 역공학하여 자동 예매 매크로를 구현했으며, 2025년 초 도입된 DynaPath anti-bot SDK의 토큰 생성 로직을 완전히 재현하는 데 성공했습니다. 실제 코레일 서버에서 KTX 서울→부산 구간의 예약번호가 발급되고 좌석이 배정되는 것까지 확인하여, 현행 방어 체계의 한계를 실증적으로 입증했습니다. 본 분석의 목적은 취약점을 악용하는 것이 아니라, 방어 강화를 위한 구체적인 대책을 제시하는 것입니다.">
   <div class="slide-content" style="text-align:center;">
     <div class="fade-up">
       <p class="subtitle">보안 취약점 분석 보고</p>
@@ -405,7 +412,7 @@
 </div>
 
 <!-- ════════════ SLIDE 2: 목차 ════════════ -->
-<div class="slide dark" id="s1" data-notes="프레젠테이션은 6개 섹션으로 구성됩니다. 매크로의 동작 원리, DynaPath anti-bot 우회 분석, 실제 테스트 결과, 공격 벡터, 방어 대책, 그리고 적용 로드맵 순서로 진행합니다.">
+<div class="slide dark" id="s1" data-notes="프레젠테이션은 6개 섹션으로 구성됩니다. 섹션 1에서는 매크로가 코레일 모바일 API를 어떻게 호출하는지(로그인 POST /classes/com.korail.mobile.login.Login → 조회 POST /classes/com.korail.mobile.seatMovie.ScheduleView → 예매 GET /classes/com.korail.mobile.certification.TicketReservation) 전체 흐름을 설명합니다. 섹션 2에서는 DynaPath SDK의 x-dynapath-m-token 헤더가 어떻게 생성되고, 어떻게 역공학으로 우회되었는지 기술적으로 분석합니다. 섹션 3은 실제 테스트 결과(예매 3건 성공, 19/19 PASS)를, 섹션 4는 공격 벡터를, 섹션 5~6은 9가지 방어 대책과 3단계 적용 로드맵을 다룹니다.">
   <div class="slide-content">
     <h2 class="fade-up">목차</h2>
     <div class="grid-2 fade-up" style="margin-top:20px;">
@@ -448,7 +455,7 @@
 </div>
 
 <!-- ════════════ SLIDE 3: 매크로 동작 흐름 ════════════ -->
-<div class="slide" id="s2" data-notes="매크로는 웹 UI에서 사용자 입력을 받아 Flask 서버가 처리합니다. 핵심은 korail2 라이브러리에 DynaPath 토큰 생성 패치를 적용하여 코레일 모바일 API에 직접 요청을 보내는 것입니다. 공식 앱과 동일한 형태의 요청을 구성하므로 서버가 구분하기 어렵습니다.">
+<div class="slide" id="s2" data-notes="매크로의 전체 아키텍처입니다. 사용자가 웹 UI에서 출발역/도착역/날짜를 입력하면 Flask 백엔드가 별도 스레드에서 매크로를 실행합니다. 코레일 모바일 API 통신은 korail2 라이브러리가 담당하며, 우리가 적용한 패치(DynaPathMasterEngine)가 매 요청마다 x-dynapath-m-token 헤더와 Sid 파라미터를 자동 생성합니다. 실제 API 호출 예시: 로그인 시 POST https://smart.letskorail.com:443/classes/com.korail.mobile.login.Login에 Device=AD, Version=250601002, txtMemberNo=회원번호, txtPwd=AES암호화된비밀번호, Sid=AES암호화된세션ID를 전송합니다. 열차 조회 시에는 POST /classes/com.korail.mobile.seatMovie.ScheduleView에 txtGoStart=서울, txtGoEnd=부산, txtGoAbrdDt=20260409, txtGoHour=070000 등의 파라미터를 전송합니다. User-Agent를 Android 13 SM-S928N으로 위장하여 공식 앱과 동일한 형태의 요청을 구성합니다.">
   <div class="slide-content">
     <h2 class="fade-up">01. 매크로 동작 흐름</h2>
     <div class="flow fade-up">
@@ -480,7 +487,7 @@
 </div>
 
 <!-- ════════════ SLIDE 4: 핵심 전략 ════════════ -->
-<div class="slide dark" id="s3" data-notes="매크로의 핵심은 매진 열차를 포함한 전체 조회를 1~3초 간격으로 반복하다가 좌석이 발생하면 수 밀리초 이내에 자동 예매하는 것입니다. 사람의 반응 시간(수 초)을 완전히 제거하여 취소표 선점에서 압도적 우위를 가집니다.">
+<div class="slide dark" id="s3" data-notes="매크로의 핵심 전략은 세 가지입니다. 첫째, include_no_seats=True 파라미터로 매진된 열차까지 포함하여 조회합니다. 코레일 API는 각 열차의 좌석 상태를 h_gen_rsv_cd(일반실)와 h_spe_rsv_cd(특실) 필드로 반환하며, 값이 '11'이면 예약 가능, '13'이면 매진입니다. 매크로는 이 값을 1~3초 간격으로 모니터링하다가 '13'에서 '11'로 바뀌는 순간(취소표 발생)을 감지합니다. 둘째, 좌석 발견 즉시 GET /classes/com.korail.mobile.certification.TicketReservation API를 호출하여 예매합니다. 사람이 화면을 보고 클릭하는 데 2~5초가 걸리지만, 매크로는 수 밀리초 이내에 예매 요청을 전송합니다. 셋째, 세션 만료(P058 에러) 시 자동으로 재로그인하여 24시간 무중단 동작이 가능합니다.">
   <div class="slide-content">
     <h2 class="fade-up">01. 매크로 핵심 전략</h2>
     <div class="code-block fade-up">
@@ -506,8 +513,84 @@
   </div>
 </div>
 
+<!-- ════════════ SLIDE 4.5: 코레일 API 실제 예시 ════════════ -->
+<div class="slide" id="s3b" data-notes="코레일 모바일 앱이 사용하는 실제 API 엔드포인트와 요청/응답 예시입니다. 모든 API는 smart.letskorail.com:443에 위치하며, HTTPS로 통신합니다. 로그인 API는 POST 메서드로, 비밀번호는 서버가 동적 발급한 AES 키로 암호화됩니다. 암호화 키는 /classes/com.korail.mobile.common.code.do 엔드포인트에서 app.login.cphd 코드로 요청하여 받습니다. 열차 조회 API는 원래 GET이었으나 DynaPath 도입 후 POST로 변경되었습니다. 응답의 trn_infos.trn_info 배열에 최대 10개의 열차 정보가 포함되며, 각 열차의 h_gen_rsv_cd='11'이면 일반석 예약 가능, '13'이면 매진입니다. 예매 API는 GET 메서드로 쿼리스트링에 열차 정보(출발역코드, 도착역코드, 열차번호, 출발시간 등)와 승객 정보를 포함합니다. 취소 API도 GET 메서드이며, 예약번호(txtPnrNo)와 여정 번호(txtJrnySqno)를 전달합니다.">
+  <div class="slide-content">
+    <h2 class="fade-up">01. 코레일 모바일 API 실제 예시</h2>
+    <div class="grid-2 fade-up">
+      <div>
+        <h3>로그인 요청</h3>
+        <div class="code-block" style="font-size:0.8rem;">
+<span class="kw">POST</span> <span class="str">/classes/com.korail.mobile.login.Login</span>
+<span class="cmt">Host: smart.letskorail.com:443</span>
+<span class="cmt">x-dynapath-m-token: bEeEP...</span>
+
+Device=<span class="str">AD</span>
+Version=<span class="str">250601002</span>
+Key=<span class="str">korail1234567890</span>
+txtMemberNo=<span class="str">1000170054</span>
+txtPwd=<span class="str">[AES-CBC encrypted]</span>
+Sid=<span class="str">[AES-CBC encrypted]</span>
+txtDv=<span class="num">2</span>
+        </div>
+      </div>
+      <div>
+        <h3>열차 조회 요청</h3>
+        <div class="code-block" style="font-size:0.8rem;">
+<span class="kw">POST</span> <span class="str">/classes/com.korail.mobile
+  .seatMovie.ScheduleView</span>
+<span class="cmt">x-dynapath-m-token: bEeEP...</span>
+
+txtGoStart=<span class="str">서울</span>
+txtGoEnd=<span class="str">부산</span>
+txtGoAbrdDt=<span class="str">20260409</span>
+txtGoHour=<span class="str">070000</span>
+selGoTrain=<span class="str">100</span> <span class="cmt"># KTX</span>
+txtPsgFlg_1=<span class="num">1</span> <span class="cmt"># 어른 1명</span>
+Sid=<span class="str">[AES-CBC encrypted]</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2 fade-up" style="margin-top:16px;">
+      <div>
+        <h3>조회 응답 (좌석 상태)</h3>
+        <div class="code-block" style="font-size:0.8rem;">
+{
+  <span class="str">"strResult"</span>: <span class="str">"SUCC"</span>,
+  <span class="str">"trn_infos"</span>: { <span class="str">"trn_info"</span>: [
+    {
+      <span class="str">"h_trn_clsf_nm"</span>: <span class="str">"KTX"</span>,
+      <span class="str">"h_trn_no"</span>: <span class="str">"011"</span>,
+      <span class="str">"h_dpt_tm"</span>: <span class="str">"072700"</span>,
+      <span class="str">"h_gen_rsv_cd"</span>: <span class="str">"11"</span>, <span class="cmt">← 예약가능</span>
+      <span class="str">"h_spe_rsv_cd"</span>: <span class="str">"13"</span>  <span class="cmt">← 매진</span>
+    }, ...
+  ]}
+}
+        </div>
+      </div>
+      <div>
+        <h3>예매 요청</h3>
+        <div class="code-block" style="font-size:0.8rem;">
+<span class="kw">GET</span> <span class="str">/classes/com.korail.mobile
+  .certification.TicketReservation</span>
+<span class="cmt">x-dynapath-m-token: bEeEP...</span>
+
+txtDptRsStnCd1=<span class="str">0001</span> <span class="cmt"># 서울</span>
+txtArvRsStnCd1=<span class="str">0020</span> <span class="cmt"># 부산</span>
+txtTrnNo1=<span class="str">011</span>
+txtDptDt1=<span class="str">20260409</span>
+txtDptTm1=<span class="str">072700</span>
+txtPsrmClCd1=<span class="num">1</span>    <span class="cmt"># 일반실</span>
+txtTotPsgCnt=<span class="num">1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════ SLIDE 5: DynaPath 도입 배경 ════════════ -->
-<div class="slide" id="s4" data-notes="코레일은 2025년 초 DynaPath SDK를 도입하여 비공식 클라이언트를 차단했습니다. x-dynapath-m-token 헤더가 없는 요청은 MACRO ERROR 응답을 받습니다. 로그인, 조회, 예매 등 6개 핵심 API 경로가 보호 대상입니다.">
+<div class="slide" id="s4" data-notes="코레일은 2025년 초 앱 업데이트를 통해 DynaPath 보안 솔루션을 도입했습니다. 이후 비공식 클라이언트(korail2 라이브러리 등)로 API를 호출하면 HTTP 200이지만 strResult=FAIL, h_msg_cd=MACRO ERROR 응답이 반환됩니다. 보호 대상은 6개 핵심 경로입니다: (1) /classes/com.korail.mobile.login.Login — 로그인, (2) /classes/com.korail.mobile.seatMovie.ScheduleView — 일반 열차 조회, (3) /classes/com.korail.mobile.seatMovie.ScheduleViewSpecial — 특실 조회, (4) /classes/com.korail.mobile.certification.TicketReservation — 예매, (5) /classes/com.korail.mobile.nonMember.NonMemTicket — 비회원 예매, (6) /classes/com.korail.mobile.trn.prcFare.do — 운임 조회. 이 경로들에 x-dynapath-m-token 헤더가 없거나 유효하지 않으면 MACRO ERROR가 발생합니다. 기존 korail2 라이브러리 v0.4.0은 이 헤더를 포함하지 않아 완전히 차단되었습니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. DynaPath Anti-bot 현황</h2>
     <div class="fade-up" style="background:var(--danger-light); border-left:4px solid var(--danger); padding:20px; border-radius:8px; margin-bottom:24px;">
@@ -536,7 +619,7 @@ h_msg_txt   = <span class="str">"원활한 서비스 이용을 위해 앱을 최
 </div>
 
 <!-- ════════════ SLIDE 6: 역공학 과정 ════════════ -->
-<div class="slide dark" id="s5" data-notes="우회는 4단계로 진행되었습니다. mitmproxy로 앱 트래픽을 캡처하고, APK를 디컴파일하여 토큰 생성 로직을 분석한 뒤, Python으로 재구현했습니다. 메인 API 서버에 TLS 피닝이 적용되지 않아 트래픽 캡처가 가능했다는 점이 첫 번째 취약점입니다.">
+<div class="slide dark" id="s5" data-notes="역공학은 4단계로 진행되었습니다. 1단계(트래픽 캡처): Android 기기에 mitmproxy CA 인증서를 설치하고 코레일 앱의 HTTPS 트래픽을 가로챘습니다. 메인 API 서버 smart.letskorail.com에는 TLS Certificate Pinning이 적용되지 않아 캡처가 가능했습니다(반면 nf*.letskorail.com에는 피닝이 적용되어 내용 확인 불가). 캡처 결과 보호 경로 요청에 'x-dynapath-m-token: bEeEP...'라는 긴 헤더와 POST body에 'Sid=...'라는 Base64 문자열이 포함된 것을 확인했습니다. 2단계(APK 디컴파일): jadx로 코레일 앱 APK를 디컴파일하여 DynaPath SDK의 Java 코드를 분석했습니다. 62문자 인코딩 테이블 '3FE9jgRD4KdCyuawklqGJYmvfMn15P7US8XbxeLQtWT6OicBAopINs2Vh0HZrz', AES 키 '2485dd54d9deaa36', 앱 서명 해시 등의 하드코딩된 상수를 추출했습니다. 3단계(Python 재구현): 추출된 로직을 DynaPathMasterEngine 클래스로 재구현했습니다. 4단계(검증): 패치 적용 후 로그인, 조회, 예매, 취소 전 과정에서 MACRO ERROR 없이 정상 동작을 확인했습니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. 역공학 과정</h2>
     <div class="timeline fade-up">
@@ -561,7 +644,7 @@ h_msg_txt   = <span class="str">"원활한 서비스 이용을 위해 앱을 최
 </div>
 
 <!-- ════════════ SLIDE 7: 토큰 구조 ════════════ -->
-<div class="slide" id="s6" data-notes="DynaPath 토큰은 bEeEP 프리픽스로 시작하며, 동적 키 인코딩과 본문 인코딩으로 구성됩니다. 매 요청마다 랜덤값과 타임스탬프가 변경되어 다른 토큰이 생성되지만, 생성 알고리즘 자체는 고정되어 있어 역공학이 가능했습니다. Sid는 별도의 AES-CBC 암호화 파라미터입니다.">
+<div class="slide" id="s6" data-notes="DynaPath 토큰의 상세 구조입니다. 토큰은 'bEeEP' 매직 프리픽스로 시작하며, 그 뒤에 키 인코딩 길이를 나타내는 1문자, 동적 키의 인코딩, 본문의 인코딩이 연결됩니다. 본문에는 앱/디바이스 메타데이터가 포함됩니다: ai=com.korail.talk(앱 패키지명), di=558a4f02041657ea(디바이스 ID), as=%5B38ff229cb34c7dda8e28220a2d750cce%5D(앱 서명 해시), su=false(루팅 여부), emu=false(에뮬레이터 여부), ts=현재타임스탬프(밀리초). 인코딩에는 62문자 치환 테이블을 사용한 커스텀 base-30 알고리즘이 적용됩니다. 핵심은 매 요청마다 랜덤 4자리와 타임스탬프가 바뀌므로 동적 키가 달라지고, 키가 달라지면 make_encode_table()로 생성되는 커스텀 인코딩 테이블도 달라져 동일한 평문이라도 매번 다른 토큰이 출력된다는 것입니다. Sid는 별도로 'AD' + 타임스탬프를 AES-CBC(키=IV=b'2485dd54d9deaa36')로 암호화한 뒤 Base64 인코딩한 값입니다. 이 모든 생성 로직이 앱 내에 존재하며 서버는 참여하지 않습니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. DynaPath 토큰 구조</h2>
     <div class="token-vis fade-up">
@@ -596,7 +679,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 8: 우회 성공 원인 ════════════ -->
-<div class="slide dark" id="s7" data-notes="우회가 가능했던 6가지 근본 원인입니다. 가장 핵심적인 문제는 토큰 생성이 서버 참여 없이 클라이언트에서만 이루어진다는 것입니다. 서버가 발급한 challenge 없이 클라이언트가 독자적으로 토큰을 만들 수 있으므로, 로직만 알면 누구나 유효한 토큰을 생성할 수 있습니다.">
+<div class="slide dark" id="s7" data-notes="우회가 가능했던 6가지 근본 원인을 분석합니다. (1) 클라이언트 측 토큰 생성: DynaPath 토큰은 서버가 발급한 nonce나 challenge 없이 클라이언트가 독자적으로 생성합니다. 서버는 수신된 토큰의 형식만 검증하므로, 생성 로직을 알면 Python이든 어떤 언어든 유효한 토큰을 만들 수 있습니다. (2) 하드코딩된 비밀값: 62문자 인코딩 테이블, AES 키 b'2485dd54d9deaa36', 앱 서명 해시, 디바이스 ID 등이 모두 APK 바이너리에 평문으로 포함되어 있어 jadx 디컴파일로 즉시 추출됩니다. (3) 앱 무결성 미검증: 토큰에 su=false(루팅), emu=false(에뮬레이터) 등 환경 정보가 포함되지만 클라이언트 자체 보고값이므로 위조 가능합니다. Google Play Integrity API 같은 외부 검증이 없습니다. (4) 메인 API 서버 TLS 피닝 미적용: smart.letskorail.com에 인증서 피닝이 없어 mitmproxy로 트래픽 캡처가 가능했습니다. (5) 고정 알고리즘: 앱 업데이트 없이 인코딩 알고리즘이나 테이블을 변경할 수 없어 한 번 역공학하면 장기간 유효합니다. (6) 서버 측 심층 검증 부재: 토큰 내 타임스탬프의 유효 윈도우, device_id의 실존 여부, app_start_ts의 일관성 등을 충분히 검증하지 않는 것으로 보입니다.">
   <div class="slide-content">
     <h2 class="fade-up">02. 우회가 가능했던 근본 원인</h2>
     <div class="grid-3 fade-up" style="margin-top:16px;">
@@ -637,7 +720,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 9: 테스트 결과 종합 ════════════ -->
-<div class="slide" id="s8" data-notes="Claude AI 서브에이전트 4개를 병렬로 실행하여 4가지 테스트 스위트를 수행했습니다. 예매+취소, 다구간 조회, 반복 안정성, 토큰 TTL 모두 통과하여 19건 전체 PASS를 달성했습니다.">
+<div class="slide" id="s8" data-notes="테스트는 Claude AI 서브에이전트 4개를 병렬로 실행하여 수행했습니다. 각 에이전트는 test_runner.py를 --json 모드로 호출하여 구조화된 결과를 수집했습니다. 테스트 스위트별 상세: (1) 예매+즉시취소(reserve): 로그인 → 서울→부산 조회(10건, 1건 예약가능) → KTX 011호 예매(예약번호 320260419294600, 56,800원) → 즉시 취소 API 호출 → 취소 완료. 4단계 전부 PASS. (2) 다구간 조회(routes): 서울→대전, 서울→광주송정, 용산→목포, 서울→강릉, 동대구→부산 5개 구간을 내일/다음주 2개 날짜로 조회. 10건 전부 성공, MACRO ERROR 0건. (3) 반복 안정성(stability): 서울→부산을 3초 간격으로 20회 연속 조회. 20/20 성공(100%). Rate Limiting 탐지 없음. (4) 토큰 TTL: 로그인 후 30초 간격으로 240초(4분)간 9회 조회. 전부 성공, 세션 만료 없음. 총 19건 테스트 전체 PASS.">
   <div class="slide-content">
     <h2 class="fade-up">03. 테스트 결과 종합</h2>
     <p class="fade-up small">2026-04-08 15:57~16:02 | Claude 서브에이전트 4개 병렬 실행</p>
@@ -681,7 +764,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 10: 실제 예매 결과 ════════════ -->
-<div class="slide dark" id="s9" data-notes="테스트 중 코레일 서버에서 실제로 좌석이 배정된 예약 3건이 생성되었습니다. 실제 예약번호가 발급되고 금액이 산정된 진짜 예약입니다. 모든 예약은 결제 전 단계에서 취소되었습니다. 이는 매크로가 실제 환경에서 완전히 동작함을 증명합니다.">
+<div class="slide dark" id="s9" data-notes="테스트 중 코레일 서버에서 실제로 좌석이 배정된 예약 3건의 상세 기록입니다. 1차: 예약번호 320260419021093, KTX 015호 서울→부산 07:58→10:46, 59,800원. 이 테스트에서 cancel() 함수의 JSON 파싱 버그를 발견(서버가 GET 요청의 data 파라미터를 처리하지 못해 400 Bad Request 반환). 결제기한 20분 경과 후 자동 취소됨. 2차: 예약번호 320260419241827, KTX 011호 서울→부산 07:27→10:03, 83,700원(특실). cancel 버그 수정 전이라 수동 취소 실패, 역시 기한만료로 자동 취소. 3차: 예약번호 320260419294600, KTX 011호 서울→부산 07:27→10:03, 56,800원(일반실). cancel 버그 수정 후(data=data → params=data) 즉시 취소 성공. 모든 예약은 코레일 서버의 GET /classes/com.korail.mobile.certification.TicketReservation API를 통해 생성되었으며, 실제 좌석 배정과 예약번호 발급이 이루어진 진짜 예약입니다. 이는 매크로가 프로덕션 환경에서 end-to-end로 동작함을 증명합니다.">
   <div class="slide-content">
     <h2 class="fade-up">03. 실제 예매 성공 기록</h2>
     <p class="fade-up" style="color:#aaa;">테스트 중 코레일 서버에서 실제 좌석이 배정된 진짜 예약 3건</p>
@@ -719,7 +802,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 11: 다구간 / 안정성 ════════════ -->
-<div class="slide" id="s10" data-notes="서울-대전, 서울-광주송정, 용산-목포, 서울-강릉, 동대구-부산 5개 구간에서 내일/다음주 2개 날짜씩 총 10건의 조회를 수행했으며 전부 성공했습니다. 반복 조회 20회 연속 100% 성공, 세션은 4분 이상 유효함을 확인했습니다.">
+<div class="slide" id="s10" data-notes="다구간 조회 테스트에서는 서울→대전, 서울→광주송정, 용산→목포, 서울→강릉, 동대구→부산 5개 구간을 각각 내일과 다음주 날짜로 조회했습니다(총 10건). 모든 구간에서 POST /classes/com.korail.mobile.seatMovie.ScheduleView API가 정상 응답했으며, 구간별로 정확히 10건의 열차 정보(h_trn_clsf_nm, h_trn_no, h_dpt_tm, h_arv_tm, h_gen_rsv_cd, h_spe_rsv_cd)가 JSON으로 반환되었습니다. 서울→대전(내일)이 예약 가능 1/10으로 가장 수요가 높았고, 용산→목포와 동대구→부산은 10/10 전석 예약 가능이었습니다. 반복 조회 안정성 테스트에서는 동일 구간을 3초 간격으로 20회 연속 호출했으며 100% 성공했습니다. 매 요청마다 새로운 DynaPath 토큰이 생성되었고, 코레일 서버의 Rate Limiting에 탐지되지 않았습니다. 세션 TTL 테스트에서는 로그인 후 30초 간격으로 4분간 9회 조회하여 세션이 만료되지 않음을 확인했습니다. DynaPath 토큰은 요청마다 새로 생성되므로 토큰 자체의 TTL 문제는 없으며, 세션 쿠키가 4분 이상 유효합니다.">
   <div class="slide-content">
     <h2 class="fade-up">03. 다구간 조회 및 안정성</h2>
     <div class="grid-2 fade-up">
@@ -754,7 +837,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 12: 공격 벡터 ════════════ -->
-<div class="slide dark" id="s11" data-notes="이 매크로가 악의적으로 사용될 경우 발생할 수 있는 6가지 위협입니다. 가장 직접적인 피해는 일반 사용자의 예매 기회를 박탈하는 좌석 선점이며, 대량 예약 후 미결제로 좌석을 장시간 잠그는 것도 가능합니다.">
+<div class="slide dark" id="s11" data-notes="이 매크로가 악의적으로 사용될 경우 발생할 수 있는 6가지 위협을 분석합니다. (1) 좌석 선점: 매크로는 1~3초 간격으로 ScheduleView API를 호출하여 h_gen_rsv_cd가 '13'(매진)에서 '11'(가능)로 바뀌는 순간을 감지하고, 수 ms 이내에 TicketReservation API를 호출합니다. 일반 사용자가 화면을 새로고침하고 클릭하는 동안 이미 예매가 완료됩니다. (2) 대량 예약: 여러 계정 또는 여러 세션을 동시에 실행하여 인기 구간의 좌석을 대량으로 선점할 수 있습니다. (3) 예약 후 미결제: 코레일은 예약 후 약 20분의 결제 기한을 부여합니다. 이 기간 동안 좌석이 잠기므로, 반복적으로 예매→기한만료를 반복하면 다른 사용자의 예매 기회를 장시간 차단할 수 있습니다. (4) 서버 부하: 다수의 매크로가 동시에 1초 간격으로 API를 호출하면 서버에 상당한 부하가 발생합니다. (5) 계정 도용: 매크로의 웹 UI에 타인의 계정 정보를 입력하면 무단 예매가 가능합니다. (6) 우회 기법 확산: DynaPathMasterEngine의 소스 코드가 공개되면 누구나 매크로를 만들 수 있어 대규모 봇 공격으로 이어질 수 있습니다.">
   <div class="slide-content">
     <h2 class="fade-up">04. 공격 벡터</h2>
     <div class="grid-3 fade-up" style="margin-top:16px;">
@@ -789,7 +872,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 13: 방어 대책 ════════════ -->
-<div class="slide" id="s12" data-notes="9가지 방어 대책을 효과와 구현 난이도 기준으로 우선순위를 매겼습니다. TLS 핑거프린팅은 서버 측만으로 즉시 적용 가능하여 1순위이며, App Attestation이 가장 근본적인 해결책이지만 앱 업데이트가 필요합니다.">
+<div class="slide" id="s12" data-notes="9가지 방어 대책을 효과와 구현 난이도 기준으로 우선순위를 매겼습니다. 1순위 TLS 핑거프린팅(JA3/JA4): 현재 매크로는 Python requests 라이브러리로 API를 호출합니다. User-Agent는 'Dalvik/2.1.0 (Android 13; SM-S928N)'으로 위장하지만, TLS 핸드셰이크의 JA3 핑거프린트는 Python/urllib3의 것입니다. 서버 측에서 이 불일치를 탐지하면 클라이언트 코드 변경 없이 즉시 봇을 차단할 수 있습니다. 2순위 토큰 키 동적 교체: 현재 인코딩 테이블과 AES 키가 고정되어 있어 한 번 역공학하면 장기간 유효합니다. 서버에서 주기적으로 새 키를 배포하고 이전 키를 폐기하면 역공학된 코드가 앱 업데이트마다 무력화됩니다. 3순위 App Attestation: Google Play Integrity API를 도입하면 앱 바이너리의 무결성을 Google 서버가 직접 검증합니다. Python으로 재구현한 클라이언트는 유효한 attestation 토큰을 절대 생성할 수 없어 가장 근본적인 해결책입니다. 이하 4~9순위는 TLS 피닝, Rate Limiting, CAPTCHA, 행동 패턴 분석, 대기열/랜덤 배정, 예매 정책 강화입니다.">
   <div class="slide-content">
     <h2 class="fade-up">05. 방어 대책 (9가지)</h2>
     <table class="fade-up">
@@ -808,7 +891,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 14: 핵심 방어 상세 ════════════ -->
-<div class="slide dark" id="s13" data-notes="가장 효과적인 4가지 방어 대책의 상세 설명입니다. TLS 핑거프린팅은 Python 라이브러리의 TLS 패턴과 Android User-Agent의 불일치를 탐지합니다. Challenge-Response는 DynaPath의 근본 취약점인 '클라이언트 독자 토큰 생성'을 해결합니다.">
+<div class="slide dark" id="s13" data-notes="가장 효과적인 4가지 방어 대책의 기술적 상세입니다. (1) TLS 핑거프린팅: Python requests가 사용하는 urllib3의 TLS Client Hello 메시지는 실제 Android WebView나 OkHttp와 cipher suite 순서, 확장 목록이 다릅니다. 서버 앞단(CDN/WAF)에서 JA3 해시를 수집하고 User-Agent와 대조하면 'User-Agent는 Android인데 TLS는 Python'인 요청을 높은 정확도로 식별할 수 있습니다. (2) App Attestation: Play Integrity API는 (a) 앱이 Google Play에서 설치되었는지, (b) APK가 변조되지 않았는지, (c) 기기가 루팅되지 않았는지를 Google 서버가 직접 검증하여 signed attestation 토큰을 발급합니다. 이 토큰은 코레일 서버가 Google에 검증을 요청하여 확인합니다. Python 클라이언트는 이 과정을 재현할 수 없습니다. (3) Challenge-Response: 현재 DynaPath의 핵심 취약점은 클라이언트가 서버 참여 없이 토큰을 독자 생성한다는 것입니다. 서버가 매 요청마다 고유 nonce를 발급하고, 클라이언트가 nonce를 포함하여 토큰을 생성하도록 변경하면, 서버에서 nonce를 검증할 수 있어 독자 생성이 불가능해집니다. (4) 대기열 시스템: 취소표 발생 시 즉시 공개하지 않고 30초간 모인 요청 중 랜덤으로 1명에게 배정하면, 매크로의 속도 우위가 원천적으로 무력화됩니다.">
   <div class="slide-content">
     <h2 class="fade-up">05. 핵심 방어 대책 상세</h2>
     <div class="grid-2 fade-up" style="margin-top:16px;">
@@ -837,7 +920,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 15: 적용 로드맵 ════════════ -->
-<div class="slide" id="s14" data-notes="3단계 로드맵을 제안합니다. Phase 1(즉시)은 TLS 핑거프린팅과 Rate Limiting으로 현재 매크로를 차단하고, Phase 2(1~3개월)는 Play Integrity API로 비공식 클라이언트를 원천 차단하며, Phase 3(3~6개월)는 행동 분석과 대기열로 장기 방어 체계를 구축합니다.">
+<div class="slide" id="s14" data-notes="3단계 적용 로드맵을 제안합니다. Phase 1 — 긴급 대응(즉시 적용): (a) 서버 앞단에 JA3/JA4 TLS 핑거프린팅을 도입하여 Python/Node.js 등 비브라우저 클라이언트를 즉시 탐지·차단합니다. 앱 업데이트 없이 서버 측만으로 적용 가능합니다. (b) DynaPath 인코딩 테이블과 AES 키를 앱 업데이트 시 변경하여 현재 역공학된 코드를 무력화합니다. (c) API Rate Limiting을 적용하여 동일 계정/IP에서 분당 조회 10회, 예매 3회 등의 제한을 둡니다. (d) smart.letskorail.com에 TLS Certificate Pinning을 적용하여 향후 트래픽 캡처를 방지합니다. Phase 2 — 근본 대책(1~3개월): (a) Google Play Integrity API를 도입하여 앱 바이너리 무결성을 검증합니다. 이것만으로 비공식 클라이언트를 원천적으로 차단할 수 있습니다. (b) DynaPath를 Challenge-Response 방식으로 전환하여 클라이언트 독자 토큰 생성을 불가능하게 합니다. (c) 예매 직전에 CAPTCHA를 도입하고, 미결제 반복 시 패널티를 적용합니다. Phase 3 — 장기 방어(3~6개월): (a) 조회 간격 분산, 조회→예매 반응 시간 등을 분석하는 행동 패턴 분석 시스템을 구축합니다. (b) 인기 구간에 대기열/랜덤 배정을 도입하여 매크로의 속도 우위를 원천적으로 제거합니다.">
   <div class="slide-content">
     <h2 class="fade-up">06. 적용 로드맵</h2>
     <div class="grid-3 fade-up" style="margin-top:24px;">
@@ -879,7 +962,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
 </div>
 
 <!-- ════════════ SLIDE 16: 결론 ════════════ -->
-<div class="slide blue" id="s15" data-notes="핵심 메시지는 '클라이언트에 있는 비밀은 비밀이 아니다'입니다. DynaPath의 모든 보안 요소가 앱 내에 하드코딩되어 있어 역공학으로 완전히 우회되었습니다. 단일 방어가 아닌 다층 방어(Defense in Depth) 전략만이 효과적이며, 서버 측 검증 강화가 필수적입니다.">
+<div class="slide blue" id="s15" data-notes="핵심 메시지는 '클라이언트에 있는 비밀은 비밀이 아니다'입니다. DynaPath SDK의 인코딩 테이블(3FE9jgRD4K...), AES 키(2485dd54d9deaa36), 앱 서명 해시, 디바이스 ID 등 모든 보안 요소가 APK 바이너리에 하드코딩되어 있어 jadx 디컴파일 한 번으로 전부 추출되었습니다. 토큰 생성에 서버 참여가 없고, 앱 무결성 검증(Play Integrity)도 없어 Python으로 완전히 재현할 수 있었습니다. 실제 테스트에서 KTX 서울→부산 구간의 예매 3건이 성공하여 전 과정의 동작을 입증했습니다. korail2 라이브러리는 편의 도구일 뿐이며, HTTP 요청의 엔드포인트(smart.letskorail.com/classes/com.korail.mobile.*)와 파라미터 형식을 알면 어떤 언어로든 동일한 매크로를 구현할 수 있습니다. 따라서 특정 라이브러리를 차단하는 것은 무의미하며, TLS 핑거프린팅 → App Attestation → 행동 분석 → 대기열의 다층 방어(Defense in Depth) 전략만이 효과적입니다. 서버 측 검증 강화가 가장 시급한 과제입니다.">
   <div class="slide-content" style="text-align:center;">
     <h2 class="fade-up" style="font-size:2.4rem; color:#fff;">결론</h2>
     <div class="fade-up" style="max-width:800px; margin:0 auto; text-align:left; margin-top:32px;">
@@ -939,6 +1022,7 @@ Sid = <span class="fn">base64</span>(Sid) + <span class="str">"\n"</span>
     notesVisible = !notesVisible;
     document.getElementById('notesPanel').classList.toggle('visible', notesVisible);
     document.getElementById('notesBtn').classList.toggle('active', notesVisible);
+    document.body.classList.toggle('notes-open', notesVisible);
   }
 
   document.addEventListener('keydown', e => {
