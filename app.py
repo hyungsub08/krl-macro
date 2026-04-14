@@ -243,7 +243,7 @@ def api_start():
         "adult": int(data.get("adult", 1)),
         "child": int(data.get("child", 0)),
         "senior": int(data.get("senior", 0)),
-        "interval": float(data.get("interval", 1.0)),
+        "interval": float(data.get("interval", 3.0)),
         "max_attempts": int(data.get("maxAttempts", 0)),
         "train_numbers": data.get("trainNumbers", ""),
     }

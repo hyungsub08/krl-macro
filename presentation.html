@@ -385,13 +385,41 @@
 
   /* ── 반응형 ── */
   @media (max-width: 900px) {
-    .slide { padding: 30px 24px; }
+    .slide { padding: 30px 24px 90px; }
     h1 { font-size: 2rem; }
     h2 { font-size: 1.5rem; }
     p, li { font-size: 1rem; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
     .flow { flex-direction: column; }
     .flow-arrow { transform: rotate(90deg); }
+    .stat-number { font-size: 2.2rem; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  }
+
+  @media (max-width: 600px) {
+    .slide { padding: 14px 16px 90px; }
+    h1 { font-size: 1.55rem !important; line-height: 1.25; }
+    h2 { font-size: 1.15rem; margin-bottom: 14px; }
+    h3 { font-size: 1rem; }
+    p, li { font-size: 0.88rem; line-height: 1.6; }
+    .subtitle { font-size: 0.95rem; }
+    .small { font-size: 0.78rem; }
+    .stat-number { font-size: 1.8rem; }
+    .flow-box { min-width: 90px; font-size: 0.8rem; padding: 10px 12px; }
+    .card { padding: 12px 14px; }
+    .code-block { font-size: 0.75rem; padding: 12px; line-height: 1.55; }
+    table { font-size: 0.78rem; }
+    th, td { padding: 7px 9px; }
+    .token-vis { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .timeline { padding-left: 22px; }
+    .notes-panel { max-height: 160px; padding: 14px 18px 20px; font-size: 0.85rem; line-height: 1.7; }
+    body.notes-open .nav { bottom: 174px; }
+    body.notes-open .slide-counter { bottom: 182px; }
+    body.notes-open .progress { bottom: 160px; }
+    .nav { right: 14px; bottom: 18px; gap: 8px; }
+    .nav button, .notes-btn { width: 42px; height: 42px; font-size: 1.1rem; }
+    .slide-counter { left: 14px; bottom: 26px; font-size: 0.78rem; }
+    .slide-content { max-width: 100%; }
   }
 </style>
 </head>
