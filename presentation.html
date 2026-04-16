@@ -1102,7 +1102,103 @@ $ <span class="fn">claude</span>
   </div>
 </div>
 
-<!-- ════════════ SLIDE 18: 결론 ════════════ -->
+<!-- ════════════ SLIDE 18: 차단 시 진단 플로우 ════════════ -->
+<div class="slide dark" id="s16a" data-notes="매크로가 차단되었을 때 나타나는 6가지 대표적인 증상과 각각의 원인, 즉시 대응 방법을 정리한 진단 가이드입니다. 'MACRO ERROR' 응답은 DynaPath 토큰 알고리즘이 변경되었음을 의미하며, 최신 APK를 다시 디컴파일하여 변경된 로직을 파악해야 합니다. HTTP 429 또는 반복 실패는 Rate Limiting으로 간격을 3~5초로 늘리고 랜덤 지터를 추가하면 대부분 해결됩니다. HTTP 403은 TLS 핑거프린팅 차단으로 curl_cffi 라이브러리로 실제 브라우저의 TLS 패턴을 모방해야 합니다. 계정 잠금은 일시적 차단인 경우가 많아 대기 후 재시도하거나 요청 빈도를 줄여야 합니다. CAPTCHA 요구 시에는 브라우저 자동화로 전환하여 수동 해결하거나 CAPTCHA 솔버 API를 연동할 수 있습니다. 가장 강력한 차단인 Play Integrity(App Attestation)가 도입되면 API 직접 호출 방식은 사실상 불가능해지며, 실제 Android 기기에서 공식 앱을 자동화하는 방식(ADB + UIAutomator2)만이 유일한 대안입니다.">
+  <div class="slide-content">
+    <h2 class="fade-up" style="color:#fff;">08. 차단 시 진단 가이드</h2>
+    <p class="fade-up" style="color:#aaa; margin-bottom:20px;">증상별 원인 분석 및 즉시 대응 방법</p>
+    <div class="fade-up" style="overflow-x:auto;">
+      <table style="font-size:0.9rem;">
+        <tr><th>증상</th><th>원인</th><th>즉시 대응</th><th>성공률</th></tr>
+        <tr>
+          <td><code style="color:#fab387;">MACRO ERROR</code></td>
+          <td>DynaPath 알고리즘 변경</td>
+          <td>최신 APK 디컴파일 → 토큰 로직 재분석</td>
+          <td><span class="badge warn">변동</span></td>
+        </tr>
+        <tr>
+          <td><code style="color:#fab387;">HTTP 429</code> / 반복 실패</td>
+          <td>Rate Limiting</td>
+          <td>간격 3~5초 + 랜덤 지터(±1초)</td>
+          <td><span class="badge pass">높음</span></td>
+        </tr>
+        <tr>
+          <td><code style="color:#fab387;">HTTP 403</code> / 연결 거부</td>
+          <td>TLS 핑거프린팅</td>
+          <td>curl_cffi로 브라우저 TLS 모방</td>
+          <td><span class="badge pass">높음</span></td>
+        </tr>
+        <tr>
+          <td>로그인 실패 / 계정 잠금</td>
+          <td>계정 기반 차단</td>
+          <td>대기 후 재시도 + 빈도 감소</td>
+          <td><span class="badge pass">높음</span></td>
+        </tr>
+        <tr>
+          <td>CAPTCHA 요구</td>
+          <td>봇 탐지</td>
+          <td>브라우저 자동화 + 수동/솔버 해결</td>
+          <td><span class="badge warn">중간</span></td>
+        </tr>
+        <tr>
+          <td>Play Integrity 오류</td>
+          <td>App Attestation</td>
+          <td>실제 기기 자동화 (ADB)</td>
+          <td><span class="badge pass">높음</span></td>
+        </tr>
+      </table>
+    </div>
+    <div class="fade-up" style="margin-top:16px; background:rgba(255,255,255,0.08); padding:14px 18px; border-radius:10px; border-left:4px solid var(--warn);">
+      <p style="font-size:0.95rem; color:#ffd54f; font-weight:700; margin-bottom:4px;">핵심 원칙</p>
+      <p style="font-size:0.9rem; color:#ccc;">API 직접 호출이 차단되면 → TLS 에뮬레이션 → 브라우저 자동화 → 실제 기기 순으로 전환. Play Integrity 도입 시 <strong style="color:#fff;">실제 기기 자동화만이 유일한 대안</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 19: 대체 자동예매 방법 ════════════ -->
+<div class="slide" id="s16b" data-notes="현재 매크로 방식(korail2 + DynaPath 우회)이 완전히 차단될 경우를 대비한 6가지 대체 자동예매 방법입니다. 난이도와 성공률을 기준으로 우선순위를 매겼습니다. 가장 쉬운 것은 조회 간격에 랜덤 지터를 추가하는 것으로, random.gauss(3.0, 0.5) 등의 가우시안 분포를 사용하여 인간과 유사한 불규칙 패턴을 만듭니다. TLS 핑거프린트 에뮬레이션은 curl_cffi 라이브러리로 requests를 교체하면 실제 Chrome 브라우저의 TLS Client Hello를 그대로 재현할 수 있습니다. 웹 브라우저 자동화(Playwright)는 코레일 웹사이트를 실제 Chromium으로 접근하므로 모바일 API의 DynaPath가 적용되지 않지만, 페이지 로드 시간 때문에 속도가 5~10배 느립니다. 프록시/IP 로테이션은 IP 기반 Rate Limiting에 효과적이나, 세션/계정 기반 추적은 우회하지 못합니다. 실제 기기 자동화(ADB + UIAutomator2)는 가장 확실한 방법으로, 공식 앱을 그대로 사용하므로 Play Integrity를 포함한 모든 보안 검증을 통과합니다. 다만 실제 Android 기기가 필요하고 구현 복잡도가 높습니다. 최종 권장은: Rate Limiting → curl_cffi → Playwright → 실제 기기 순서로 단계적 전환입니다.">
+  <div class="slide-content">
+    <h2 class="fade-up">08. 대체 자동예매 방법</h2>
+    <p class="fade-up small" style="margin-bottom:16px;">현재 방식 차단 시 대안 — 난이도/성공률 순위</p>
+    <div class="grid-3 fade-up">
+      <div class="card" style="border-left:4px solid var(--success);">
+        <h3 style="font-size:1rem;">1. 간격/패턴 조정</h3>
+        <p class="small"><span class="badge pass">난이도 하</span> <span class="badge pass">성공률 높음</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">랜덤 지터(±1초) 추가, 가우시안 분포 간격. 코드 수정만으로 즉시 적용.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--success);">
+        <h3 style="font-size:1rem;">2. TLS 에뮬레이션</h3>
+        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge pass">성공률 높음</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">curl_cffi로 실제 Chrome TLS 핑거프린트 모방. requests 교체로 적용.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--warn);">
+        <h3 style="font-size:1rem;">3. 브라우저 자동화</h3>
+        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge warn">성공률 중~높</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">Playwright로 코레일 웹 직접 제어. DynaPath 무관. 속도 느림.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--warn);">
+        <h3 style="font-size:1rem;">4. IP 로테이션</h3>
+        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge warn">성공률 중</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">주거용 프록시 또는 모바일 CGNAT로 IP 분산. IP 차단에 효과적.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger);">
+        <h3 style="font-size:1rem;">5. 실제 기기 자동화</h3>
+        <p class="small"><span class="badge fail">난이도 상</span> <span class="badge pass">성공률 높음</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">ADB + UIAutomator2로 공식 앱 조작. <strong>모든 차단 우회</strong>. 기기 필요.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger);">
+        <h3 style="font-size:1rem;">6. API 역공학 재수행</h3>
+        <p class="small"><span class="badge fail">난이도 상</span> <span class="badge warn">성공률 변동</span></p>
+        <p style="font-size:0.9rem; margin-top:8px;">최신 APK 디컴파일 → DynaPath 변경 분석. Challenge-Response 시 무력.</p>
+      </div>
+    </div>
+    <div class="fade-up" style="margin-top:16px; background:var(--primary-light); padding:12px 18px; border-radius:10px;">
+      <p style="font-size:0.9rem; color:var(--primary); font-weight:700;">권장 대응 순서: <span style="font-weight:400;">간격 조정 → TLS 에뮬레이션 → 브라우저 자동화 → 실제 기기</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SLIDE 20: 결론 ════════════ -->
 <div class="slide blue" id="s15" data-notes="핵심 메시지는 '클라이언트에 있는 비밀은 비밀이 아니다'입니다. DynaPath SDK의 인코딩 테이블(3FE9jgRD4K...), AES 키(2485dd54d9deaa36), 앱 서명 해시, 디바이스 ID 등 모든 보안 요소가 APK 바이너리에 하드코딩되어 있어 jadx 디컴파일 한 번으로 전부 추출되었습니다. 토큰 생성에 서버 참여가 없고, 앱 무결성 검증(Play Integrity)도 없어 Python으로 완전히 재현할 수 있었습니다. 실제 테스트에서 KTX 서울→부산 구간의 예매 3건이 성공하여 전 과정의 동작을 입증했습니다. korail2 라이브러리는 편의 도구일 뿐이며, HTTP 요청의 엔드포인트(smart.letskorail.com/classes/com.korail.mobile.*)와 파라미터 형식을 알면 어떤 언어로든 동일한 매크로를 구현할 수 있습니다. 따라서 특정 라이브러리를 차단하는 것은 무의미하며, TLS 핑거프린팅 → App Attestation → 행동 분석 → 대기열의 다층 방어(Defense in Depth) 전략만이 효과적입니다. 서버 측 검증 강화가 가장 시급한 과제입니다.">
   <div class="slide-content" style="text-align:center;">
     <h2 class="fade-up" style="font-size:2.4rem; color:#fff;">결론</h2>
