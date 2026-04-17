@@ -1164,55 +1164,35 @@ $ <span class="fn">claude</span>
 <div class="slide" id="s15b" data-notes="Claude Code의 서브에이전트(Sub-agent) 기능을 활용한 병렬 테스트 아키텍처입니다. Claude Code는 Agent 도구를 통해 독립적인 서브에이전트를 생성할 수 있으며, 각 에이전트는 별도의 컨텍스트에서 작업을 수행합니다. 이 프로젝트에서는 메인 에이전트(사용자와 대화하는 Claude)가 4개의 서브에이전트를 동시에 생성하여 테스트를 병렬 실행했습니다. 서브에이전트 1은 예매+취소 테스트(python3 test_runner.py --suite reserve), 서브에이전트 2는 다구간 조회(--suite routes), 서브에이전트 3은 반복 안정성(--suite stability), 서브에이전트 4는 토큰 TTL(--suite ttl)을 각각 전담했습니다. 각 에이전트는 --json 플래그로 구조화된 결과를 반환했고, 메인 에이전트가 결과를 수집하여 TEST_REPORT.md를 자동 생성했습니다. 이 방식의 장점은: (1) 순차 실행 시 ~6분 소요되는 전체 테스트를 ~4분으로 단축, (2) 각 에이전트가 독립적으로 오류를 분석하고 보고, (3) 메인 에이전트의 컨텍스트 윈도우를 테스트 로그로 오염시키지 않음, (4) 실패 시 해당 에이전트만 재실행 가능합니다. Claude Code의 서브에이전트는 Agent(description, prompt) 형태로 호출하며, 병렬 실행 시 한 메시지에 여러 Agent 호출을 포함하면 됩니다.">
   <div class="slide-content">
     <h2 class="fade-up">07. Claude 서브에이전트 테스트 아키텍처</h2>
-    <div class="fade-up" style="margin:24px 0;">
-      <div class="flow">
-        <div class="flow-box" style="background:#7c3aed; min-width:200px;">메인 에이전트<br><span style="font-size:0.8rem;font-weight:400;">사용자 대화 + 결과 수집</span></div>
-      </div>
-      <div class="flow" style="margin-top:8px;">
-        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 1<br><span style="font-size:0.75rem;font-weight:400;">예매+취소</span></div>
-        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 2<br><span style="font-size:0.75rem;font-weight:400;">다구간 조회</span></div>
-        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 3<br><span style="font-size:0.75rem;font-weight:400;">반복 안정성</span></div>
-        <div class="flow-box" style="background:#2563eb; min-width:150px;">에이전트 4<br><span style="font-size:0.75rem;font-weight:400;">토큰 TTL</span></div>
-      </div>
+    <p class="fade-up small" style="margin-bottom:14px;">메인 에이전트가 4개 서브에이전트를 병렬 생성하여 테스트 동시 실행</p>
+    <div class="flow fade-up" style="justify-content:center;">
+      <div class="flow-box" style="background:#7c3aed;">메인 에이전트</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#2563eb;">에이전트 1<br><span style="font-size:0.72rem;font-weight:400;opacity:0.9;">예매+취소</span></div>
+      <div class="flow-box" style="background:#2563eb;">에이전트 2<br><span style="font-size:0.72rem;font-weight:400;opacity:0.9;">다구간 조회</span></div>
+      <div class="flow-box" style="background:#2563eb;">에이전트 3<br><span style="font-size:0.72rem;font-weight:400;opacity:0.9;">반복 안정성</span></div>
+      <div class="flow-box" style="background:#2563eb;">에이전트 4<br><span style="font-size:0.72rem;font-weight:400;opacity:0.9;">토큰 TTL</span></div>
     </div>
-    <div class="grid-2 fade-up">
+    <div class="grid-2 fade-up" style="margin-top:18px; align-items:start;">
       <div>
-        <h3>에이전트 호출 코드</h3>
-        <div class="code-block" style="font-size:0.8rem;">
-<span class="cmt"># Claude Code 내부에서 4개 에이전트 병렬 생성</span>
-<span class="fn">Agent</span>({
-  description: <span class="str">"Test: reserve+cancel"</span>,
-  prompt: <span class="str">`test_runner.py --suite reserve
-           --json 실행 후 결과 보고`</span>
-})
-<span class="fn">Agent</span>({
-  description: <span class="str">"Test: multi-route"</span>,
-  prompt: <span class="str">`test_runner.py --suite routes
-           --json 실행 후 결과 보고`</span>
-})
-<span class="cmt">// ... 에이전트 3, 4도 동시 호출</span>
+        <h3>호출 코드</h3>
+        <div class="code-block">
+<span class="cmt"># 4개 에이전트를 한 번에 병렬 호출</span>
+<span class="fn">Agent</span>({ description: <span class="str">"reserve"</span>,   prompt: <span class="str">"test --suite reserve --json"</span> })
+<span class="fn">Agent</span>({ description: <span class="str">"routes"</span>,    prompt: <span class="str">"test --suite routes --json"</span> })
+<span class="fn">Agent</span>({ description: <span class="str">"stability"</span>, prompt: <span class="str">"test --suite stability --json"</span> })
+<span class="fn">Agent</span>({ description: <span class="str">"ttl"</span>,       prompt: <span class="str">"test --suite ttl --json"</span> })
         </div>
       </div>
       <div>
-        <h3>결과</h3>
-        <div class="grid-2" style="gap:12px;">
-          <div class="card" style="text-align:center; padding:16px;">
-            <div class="stat-number success" style="font-size:2rem;">4</div>
-            <p class="small">병렬 에이전트</p>
-          </div>
-          <div class="card" style="text-align:center; padding:16px;">
-            <div class="stat-number success" style="font-size:2rem;">19/19</div>
-            <p class="small">ALL PASS</p>
-          </div>
-          <div class="card" style="text-align:center; padding:16px;">
-            <div class="stat-number" style="font-size:2rem;">~4분</div>
-            <p class="small">전체 소요 시간</p>
-          </div>
-          <div class="card" style="text-align:center; padding:16px;">
-            <div class="stat-number" style="font-size:2rem;">1</div>
-            <p class="small">버그 발견+수정</p>
-          </div>
-        </div>
+        <h3>핵심 결과</h3>
+        <ul style="margin-top:4px;">
+          <li><strong>19/19 PASS</strong> · 소요 시간 ~4분 (순차 대비 약 2배 단축)</li>
+          <li>각 에이전트가 <strong>독립 컨텍스트</strong>에서 오류 분석·보고</li>
+          <li>메인 에이전트 컨텍스트 윈도우 오염 방지</li>
+          <li>실패 시 해당 에이전트만 <strong>선택 재실행</strong> 가능</li>
+          <li>테스트 중 <code>cancel()</code> 함수 버그 1건 발견·수정</li>
+        </ul>
       </div>
     </div>
   </div>
