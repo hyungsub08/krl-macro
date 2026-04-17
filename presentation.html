@@ -421,6 +421,92 @@
     .slide-counter { left: 14px; bottom: 26px; font-size: 0.78rem; }
     .slide-content { max-width: 100%; }
   }
+
+  /* ── PDF 출력 (A4 가로) ── */
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    html, body {
+      overflow: visible !important;
+      height: auto !important;
+      background: #fff !important;
+    }
+
+    body.printing .deck {
+      height: auto !important;
+      width: auto !important;
+      position: static !important;
+    }
+
+    body.printing .slide {
+      position: relative !important;
+      inset: auto !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: flex !important;
+      width: 297mm !important;
+      height: 210mm !important;
+      max-width: 297mm !important;
+      max-height: 210mm !important;
+      padding: 12mm 16mm !important;
+      margin: 0 !important;
+      page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      overflow: hidden !important;
+      box-sizing: border-box;
+    }
+
+    body.printing .slide:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    body.printing .slide .fade-up {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    body.printing .slide-content {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    body.printing .nav,
+    body.printing .progress,
+    body.printing .slide-counter,
+    body.printing .notes-panel {
+      display: none !important;
+    }
+
+    /* 인쇄용 타이포그래피 축소 (A4 가로에 맞추기) */
+    body.printing h1 { font-size: 2.4rem !important; }
+    body.printing h2 { font-size: 1.6rem !important; margin-bottom: 14px !important; }
+    body.printing h3 { font-size: 1.1rem !important; }
+    body.printing p,
+    body.printing li { font-size: 0.95rem !important; line-height: 1.55 !important; }
+    body.printing .subtitle { font-size: 1.05rem !important; }
+    body.printing .small { font-size: 0.82rem !important; }
+    body.printing .stat-number { font-size: 2.2rem !important; }
+    body.printing .code-block { font-size: 0.8rem !important; padding: 14px !important; line-height: 1.6 !important; }
+    body.printing table { font-size: 0.85rem !important; }
+    body.printing th,
+    body.printing td { padding: 8px 10px !important; }
+    body.printing .card { padding: 14px 16px !important; }
+    body.printing .flow-box { padding: 10px 16px !important; font-size: 0.9rem !important; }
+    body.printing ul li { padding: 3px 0 3px 22px !important; }
+  }
 </style>
 </head>
 <body>
@@ -1229,6 +1315,7 @@ $ <span class="fn">claude</span>
   <div id="notesContent"></div>
 </div>
 <div class="nav">
+  <button class="notes-btn" id="pdfBtn" onclick="exportPDF()" title="PDF로 저장 (P)" style="background:#00695c;">PDF</button>
   <button class="notes-btn" id="notesBtn" onclick="toggleNotes()" title="설명 보기 (N)">N</button>
   <button id="prevBtn" onclick="go(-1)">&#8592;</button>
   <button id="nextBtn" onclick="go(1)">&#8594;</button>
@@ -1263,12 +1350,30 @@ $ <span class="fn">claude</span>
     document.body.classList.toggle('notes-open', notesVisible);
   }
 
+  function exportPDF() {
+    // 인쇄 모드: 모든 슬라이드를 A4 가로 페이지로 펼쳐서 출력
+    // 사용자는 인쇄 대화상자에서 "PDF로 저장"을 선택
+    document.body.classList.add('printing');
+    if (notesVisible) toggleNotes();
+    // 렌더링 시간 확보 후 인쇄 대화 표시
+    setTimeout(() => {
+      window.print();
+      // 인쇄 대화 닫힌 후 원상복구
+      document.body.classList.remove('printing');
+    }, 100);
+  }
+
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing');
+  });
+
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
     if (e.key === 'Home') { current = 0; show(0); }
     if (e.key === 'End') { current = total - 1; show(current); }
     if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
+    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); exportPDF(); }
   });
 
   let touchStartX = 0;
