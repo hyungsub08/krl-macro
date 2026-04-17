@@ -428,84 +428,114 @@
     margin: 0;
   }
 
+  /* body.printing 클래스가 추가되면 화면에서도 인쇄 레이아웃 적용(JS 측정용) */
+  body.printing {
+    overflow: visible !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+
+  body.printing .deck {
+    height: auto !important;
+    width: auto !important;
+    position: static !important;
+  }
+
+  body.printing .slide {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    padding: 10mm 14mm !important;
+    margin: 0 !important;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    overflow: hidden !important;
+    box-sizing: border-box;
+  }
+
+  body.printing .slide:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  body.printing .slide .fade-up {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  body.printing .slide-content {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  body.printing .nav,
+  body.printing .progress,
+  body.printing .slide-counter,
+  body.printing .notes-panel {
+    display: none !important;
+  }
+
+  /* 인쇄용 타이포그래피/간격 — A4 가로(297×210mm)에 맞춰 축소 */
+  body.printing h1 { font-size: 2.1rem !important; line-height: 1.2 !important; margin-bottom: 10px !important; }
+  body.printing h2 { font-size: 1.4rem !important; margin-bottom: 12px !important; }
+  body.printing h3 { font-size: 0.98rem !important; margin-bottom: 6px !important; }
+  body.printing p,
+  body.printing li { font-size: 0.82rem !important; line-height: 1.45 !important; }
+  body.printing ul li { padding: 2px 0 2px 20px !important; }
+  body.printing ul li::before { top: 11px !important; width: 8px !important; height: 8px !important; }
+  body.printing .subtitle { font-size: 0.95rem !important; }
+  body.printing .small { font-size: 0.72rem !important; }
+  body.printing .stat-number { font-size: 1.8rem !important; }
+  body.printing .code-block {
+    font-size: 0.7rem !important;
+    padding: 10px 12px !important;
+    line-height: 1.5 !important;
+    margin: 6px 0 !important;
+    border-radius: 8px !important;
+  }
+  body.printing table { font-size: 0.76rem !important; margin: 8px 0 !important; }
+  body.printing th,
+  body.printing td { padding: 5px 8px !important; }
+  body.printing th { font-size: 0.72rem !important; }
+  body.printing .card { padding: 10px 12px !important; margin-bottom: 8px !important; }
+  body.printing .grid-2 { gap: 14px !important; }
+  body.printing .grid-3 { gap: 10px !important; }
+  body.printing .flow { margin: 10px 0 !important; gap: 8px !important; }
+  body.printing .flow-box {
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+    min-width: 100px !important;
+  }
+  body.printing .flow-arrow { font-size: 1.1rem !important; }
+  body.printing .timeline { padding-left: 20px !important; }
+  body.printing .timeline-item { padding: 6px 0 !important; }
+  body.printing .token-vis { font-size: 0.75rem !important; margin: 10px 0 !important; }
+  body.printing .token-part { padding: 10px 12px !important; }
+  body.printing .badge { padding: 2px 10px !important; font-size: 0.7rem !important; }
+
   @media print {
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       color-adjust: exact !important;
     }
-
     html, body {
       overflow: visible !important;
-      height: auto !important;
       background: #fff !important;
     }
-
-    body.printing .deck {
-      height: auto !important;
-      width: auto !important;
-      position: static !important;
-    }
-
-    body.printing .slide {
-      position: relative !important;
-      inset: auto !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      display: flex !important;
-      width: 297mm !important;
-      height: 210mm !important;
-      max-width: 297mm !important;
-      max-height: 210mm !important;
-      padding: 12mm 16mm !important;
-      margin: 0 !important;
-      page-break-after: always;
-      break-after: page;
-      page-break-inside: avoid;
-      break-inside: avoid;
-      overflow: hidden !important;
-      box-sizing: border-box;
-    }
-
-    body.printing .slide:last-child {
-      page-break-after: auto;
-      break-after: auto;
-    }
-
-    body.printing .slide .fade-up {
-      opacity: 1 !important;
-      transform: none !important;
-      transition: none !important;
-    }
-
-    body.printing .slide-content {
-      max-width: 100% !important;
-      width: 100% !important;
-    }
-
-    body.printing .nav,
-    body.printing .progress,
-    body.printing .slide-counter,
-    body.printing .notes-panel {
-      display: none !important;
-    }
-
-    /* 인쇄용 타이포그래피 축소 (A4 가로에 맞추기) */
-    body.printing h1 { font-size: 2.4rem !important; }
-    body.printing h2 { font-size: 1.6rem !important; margin-bottom: 14px !important; }
-    body.printing h3 { font-size: 1.1rem !important; }
-    body.printing p,
-    body.printing li { font-size: 0.95rem !important; line-height: 1.55 !important; }
-    body.printing .subtitle { font-size: 1.05rem !important; }
-    body.printing .small { font-size: 0.82rem !important; }
-    body.printing .stat-number { font-size: 2.2rem !important; }
-    body.printing .code-block { font-size: 0.8rem !important; padding: 14px !important; line-height: 1.6 !important; }
-    body.printing table { font-size: 0.85rem !important; }
-    body.printing th,
-    body.printing td { padding: 8px 10px !important; }
-    body.printing .card { padding: 14px 16px !important; }
-    body.printing .flow-box { padding: 10px 16px !important; font-size: 0.9rem !important; }
-    body.printing ul li { padding: 3px 0 3px 22px !important; }
   }
 </style>
 </head>
@@ -1350,21 +1380,54 @@ $ <span class="fn">claude</span>
     document.body.classList.toggle('notes-open', notesVisible);
   }
 
+  function fitSlidesForPrint() {
+    // 각 슬라이드의 실제 콘텐츠 높이/폭을 측정하여 A4 가로에 넘치면 scale로 축소
+    document.querySelectorAll('.slide').forEach(slide => {
+      const content = slide.querySelector('.slide-content');
+      if (!content) return;
+      content.style.transform = '';
+      content.style.transformOrigin = 'center center';
+      const cs = getComputedStyle(slide);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const availW = slide.clientWidth - padX;
+      const availH = slide.clientHeight - padY;
+      const needW = content.scrollWidth;
+      const needH = content.scrollHeight;
+      if (needH <= availH + 1 && needW <= availW + 1) return;
+      const scale = Math.min(availW / needW, availH / needH);
+      if (scale < 0.999) {
+        content.style.transform = `scale(${scale})`;
+      }
+    });
+  }
+
+  function resetSlideFit() {
+    document.querySelectorAll('.slide .slide-content').forEach(c => {
+      c.style.transform = '';
+    });
+  }
+
   function exportPDF() {
-    // 인쇄 모드: 모든 슬라이드를 A4 가로 페이지로 펼쳐서 출력
-    // 사용자는 인쇄 대화상자에서 "PDF로 저장"을 선택
-    document.body.classList.add('printing');
+    // 1) printing 클래스 적용 → 슬라이드가 A4 가로 크기로 리플로우
+    // 2) 브라우저 페인트 대기 → 콘텐츠 실측
+    // 3) 넘치는 슬라이드는 transform: scale()로 자동 축소
+    // 4) window.print() 호출 → 사용자가 "PDF로 저장" 선택
     if (notesVisible) toggleNotes();
-    // 렌더링 시간 확보 후 인쇄 대화 표시
-    setTimeout(() => {
-      window.print();
-      // 인쇄 대화 닫힌 후 원상복구
-      document.body.classList.remove('printing');
-    }, 100);
+    document.body.classList.add('printing');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fitSlidesForPrint();
+        setTimeout(() => {
+          window.print();
+        }, 50);
+      });
+    });
   }
 
   window.addEventListener('afterprint', () => {
     document.body.classList.remove('printing');
+    resetSlideFit();
   });
 
   document.addEventListener('keydown', e => {
