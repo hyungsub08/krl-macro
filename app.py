@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """코레일 매진 표 자동 예매 - 웹 서버"""
 
+import random
 import threading
 import time
 import uuid
@@ -124,6 +125,21 @@ def macro_worker(session, params):
             f"({params['date']} {params['time']})"
         )
 
+        # ── 세션 warmup: 실제 사용자가 앱 실행 직후 즉시 조회하지 않는
+        # 자연스러운 흐름을 모사 (로그인 → 잠시 대기 → 기존 예약 조회 → 조회 시작)
+        try:
+            time.sleep(random.uniform(2.0, 3.5))
+            session.log("세션 워밍업: 기존 예약 조회 중...")
+            try:
+                existing = korail.reservations()
+                session.log(f"세션 워밍업 완료 (기존 예약 {len(existing)}건)")
+            except Exception as we:
+                # 예약이 없거나 조회 실패해도 워밍업 자체는 TLS/세션 확립에 기여
+                session.log(f"세션 워밍업 (예약 없음 또는 조회 오류 무시)", "warn")
+            time.sleep(random.uniform(1.0, 2.0))
+        except Exception:
+            pass
+
         while not session.stop_flag:
             session.attempt += 1
             if max_attempts > 0 and session.attempt > max_attempts:
@@ -143,7 +159,7 @@ def macro_worker(session, params):
                 )
             except NoResultsError:
                 session.log(f"#{session.attempt} 검색 결과 없음")
-                time.sleep(interval)
+                time.sleep(interval + random.uniform(-0.5, 1.5))
                 continue
             except Exception as e:
                 err = str(e)
@@ -170,7 +186,7 @@ def macro_worker(session, params):
                         session.log("권장 대안: TLS 에뮬레이션(curl_cffi), 브라우저 자동화(Playwright), 또는 실제 기기 자동화로 전환", "error")
                         session.status = "error"
                         return
-                time.sleep(interval)
+                time.sleep(interval + random.uniform(-0.5, 1.5))
                 continue
 
             # 예약 가능 열차 필터링
@@ -183,7 +199,7 @@ def macro_worker(session, params):
 
             if not available:
                 session.log(f"#{session.attempt} 매진 (조회 {len(trains)}건)")
-                time.sleep(interval)
+                time.sleep(interval + random.uniform(-0.5, 1.5))
                 continue
 
             # 예매 시도
@@ -197,6 +213,9 @@ def macro_worker(session, params):
                     f"{train.dep_name}→{train.arr_name}"
                 )
                 session.log(f"좌석 발견! {train_info}", "success")
+
+                # 인간 반응 시간 모사 (즉시 예매는 봇의 특징) — 300~900ms
+                time.sleep(random.uniform(0.3, 0.9))
 
                 try:
                     reservation = korail.reserve(

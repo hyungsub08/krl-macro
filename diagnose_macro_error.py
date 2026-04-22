@@ -26,6 +26,12 @@ print("=" * 70)
 print("KORAIL MACRO ERROR DIAGNOSIS")
 print("=" * 70)
 
+# 0) 환경 정보
+import korail2.korail2 as _k2
+print(f"\n[0] 환경 정보:")
+print(f"    curl_cffi (TLS 에뮬레이션): {'ACTIVE' if _k2._HAS_CURL_CFFI else 'INACTIVE (Python requests 사용)'}")
+print(f"    Session 클래스: {type(_k2.Korail._session).__module__}.{type(_k2.Korail._session).__name__}")
+
 # 1) 로그인
 print("\n[1] 로그인 시도...")
 k = Korail(korail_id, korail_pw, auto_login=False)
