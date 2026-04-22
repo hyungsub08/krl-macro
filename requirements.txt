@@ -1,3 +1,4 @@
 korail2
 flask
 curl_cffi
+playwright

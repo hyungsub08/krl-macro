@@ -91,20 +91,39 @@ def build_passengers(adult, child, senior):
     return passengers or [AdultPassenger()]
 
 
+TLS_PROFILE_ROTATION = [
+    "chrome131_android",
+    "chrome99_android",
+    "chrome124",
+    "chrome120",
+    "safari184_ios",
+]
+
+
+def _make_korail_with_profile(id_, pw, profile_idx, session_log):
+    """Create Korail instance with rotating TLS profile and fresh device_id."""
+    profile = TLS_PROFILE_ROTATION[profile_idx % len(TLS_PROFILE_ROTATION)]
+    session_log(f"TLS 프로필: {profile}, 새 device_id 랜덤 생성")
+    return Korail(id_, pw, auto_login=True, tls_profile=profile)
+
+
 def macro_worker(session, params):
     try:
         session.status = "running"
         session.log("로그인 중...")
 
         try:
-            korail = Korail(params["id"], params["pw"], auto_login=True)
+            korail = _make_korail_with_profile(
+                params["id"], params["pw"], 0, session.log
+            )
             session.korail = korail
+            session.tls_profile_idx = 0
         except Exception as e:
             session.log(f"로그인 실패: {e}", "error")
             session.status = "error"
             return
 
-        session.log("로그인 성공!")
+        session.log(f"로그인 성공! (device_id: {korail._device_id})")
 
         passengers = build_passengers(
             params["adult"], params["child"], params["senior"]
@@ -175,19 +194,52 @@ def macro_worker(session, params):
                         return
                 elif "MACRO ERROR" in err or "최신 버전" in err or "업데이트" in err:
                     session.consecutive_macro_errors = getattr(session, "consecutive_macro_errors", 0) + 1
-                    if session.consecutive_macro_errors == 1:
-                        session.log("⚠ DynaPath anti-bot 차단 감지", "error")
-                        session.log("원인: 앱 버전 또는 토큰 알고리즘이 서버 검증과 불일치", "error")
-                        session.log("대응 1: 간격을 5초 이상으로 늘려 재시도", "warn")
-                        session.log("대응 2: 지속 실패 시 korail2 라이브러리의 _version 및 DynaPath 알고리즘 업데이트 필요", "warn")
-                        session.log("상세 가이드: ANALYSIS.md 섹션 8.2 참조", "warn")
-                    if session.consecutive_macro_errors >= 3:
-                        session.log(f"MACRO ERROR {session.consecutive_macro_errors}회 연속 발생 - 매크로 중지", "error")
-                        session.log("권장 대안: TLS 에뮬레이션(curl_cffi), 브라우저 자동화(Playwright), 또는 실제 기기 자동화로 전환", "error")
+                    session.log(f"⚠ DynaPath 차단 감지 ({session.consecutive_macro_errors}회)", "error")
+
+                    # 2회째부터 TLS 프로필을 회전하며 새 세션 + 새 device_id로 재로그인
+                    if session.consecutive_macro_errors <= len(TLS_PROFILE_ROTATION):
+                        next_idx = session.consecutive_macro_errors % len(TLS_PROFILE_ROTATION)
+                        session.log(
+                            f"대응: TLS 프로필 회전 + 새 device_id + 세션 재생성 시도 "
+                            f"({next_idx + 1}/{len(TLS_PROFILE_ROTATION)})",
+                            "warn",
+                        )
+                        time.sleep(random.uniform(3.0, 6.0))
+                        try:
+                            korail = _make_korail_with_profile(
+                                params["id"], params["pw"], next_idx, session.log
+                            )
+                            session.korail = korail
+                            session.tls_profile_idx = next_idx
+                            session.log(f"재로그인 성공 (device_id: {korail._device_id})")
+                            # 재로그인 후 짧은 워밍업
+                            time.sleep(random.uniform(1.5, 2.5))
+                            try:
+                                korail.reservations()
+                            except Exception:
+                                pass
+                            time.sleep(random.uniform(0.8, 1.5))
+                            continue  # 다음 iteration에서 재조회
+                        except Exception as re:
+                            session.log(f"재로그인 실패: {re}", "error")
+
+                    if session.consecutive_macro_errors > len(TLS_PROFILE_ROTATION):
+                        session.log(
+                            f"모든 TLS 프로필 소진 ({len(TLS_PROFILE_ROTATION)}개) - 매크로 중지",
+                            "error",
+                        )
+                        session.log(
+                            "다음 단계: 웹 매크로(Playwright) 또는 실제 기기 자동화 필요. "
+                            "python3 web_macro.py 로 전환 시도 가능.",
+                            "error",
+                        )
                         session.status = "error"
                         return
                 time.sleep(interval + random.uniform(-0.5, 1.5))
                 continue
+
+            # 조회 성공 — MACRO ERROR 카운터 리셋
+            session.consecutive_macro_errors = 0
 
             # 예약 가능 열차 필터링
             available = []
