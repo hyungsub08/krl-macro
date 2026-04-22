@@ -1255,41 +1255,60 @@ $ <span class="fn">claude</span>
 <div class="slide" id="s16b" data-notes="현재 매크로 방식(korail2 + DynaPath 우회)이 완전히 차단될 경우를 대비한 6가지 대체 자동예매 방법입니다. 난이도와 성공률을 기준으로 우선순위를 매겼습니다. 가장 쉬운 것은 조회 간격에 랜덤 지터를 추가하는 것으로, random.gauss(3.0, 0.5) 등의 가우시안 분포를 사용하여 인간과 유사한 불규칙 패턴을 만듭니다. TLS 핑거프린트 에뮬레이션은 curl_cffi 라이브러리로 requests를 교체하면 실제 Chrome 브라우저의 TLS Client Hello를 그대로 재현할 수 있습니다. 웹 브라우저 자동화(Playwright)는 코레일 웹사이트를 실제 Chromium으로 접근하므로 모바일 API의 DynaPath가 적용되지 않지만, 페이지 로드 시간 때문에 속도가 5~10배 느립니다. 프록시/IP 로테이션은 IP 기반 Rate Limiting에 효과적이나, 세션/계정 기반 추적은 우회하지 못합니다. 실제 기기 자동화(ADB + UIAutomator2)는 가장 확실한 방법으로, 공식 앱을 그대로 사용하므로 Play Integrity를 포함한 모든 보안 검증을 통과합니다. 다만 실제 Android 기기가 필요하고 구현 복잡도가 높습니다. 최종 권장은: Rate Limiting → curl_cffi → Playwright → 실제 기기 순서로 단계적 전환입니다.">
   <div class="slide-content">
     <h2 class="fade-up">08. 대체 자동예매 방법</h2>
-    <p class="fade-up small" style="margin-bottom:16px;">현재 방식 차단 시 대안 — 난이도/성공률 순위</p>
-    <div class="grid-3 fade-up">
-      <div class="card" style="border-left:4px solid var(--success);">
-        <h3 style="font-size:1rem;">1. 간격/패턴 조정</h3>
-        <p class="small"><span class="badge pass">난이도 하</span> <span class="badge pass">성공률 높음</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">랜덤 지터(±1초) 추가, 가우시안 분포 간격. 코드 수정만으로 즉시 적용.</p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--success);">
-        <h3 style="font-size:1rem;">2. TLS 에뮬레이션</h3>
-        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge pass">성공률 높음</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">curl_cffi로 실제 Chrome TLS 핑거프린트 모방. requests 교체로 적용.</p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--warn);">
-        <h3 style="font-size:1rem;">3. 브라우저 자동화</h3>
-        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge warn">성공률 중~높</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">Playwright로 코레일 웹 직접 제어. DynaPath 무관. 속도 느림.</p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--warn);">
-        <h3 style="font-size:1rem;">4. IP 로테이션</h3>
-        <p class="small"><span class="badge warn">난이도 중</span> <span class="badge warn">성공률 중</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">주거용 프록시 또는 모바일 CGNAT로 IP 분산. IP 차단에 효과적.</p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--danger);">
-        <h3 style="font-size:1rem;">5. 실제 기기 자동화</h3>
-        <p class="small"><span class="badge fail">난이도 상</span> <span class="badge pass">성공률 높음</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">ADB + UIAutomator2로 공식 앱 조작. <strong>모든 차단 우회</strong>. 기기 필요.</p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--danger);">
-        <h3 style="font-size:1rem;">6. API 역공학 재수행</h3>
-        <p class="small"><span class="badge fail">난이도 상</span> <span class="badge warn">성공률 변동</span></p>
-        <p style="font-size:0.9rem; margin-top:8px;">최신 APK 디컴파일 → DynaPath 변경 분석. Challenge-Response 시 무력.</p>
-      </div>
-    </div>
-    <div class="fade-up" style="margin-top:16px; background:var(--primary-light); padding:12px 18px; border-radius:10px;">
-      <p style="font-size:0.9rem; color:var(--primary); font-weight:700;">권장 대응 순서: <span style="font-weight:400;">간격 조정 → TLS 에뮬레이션 → 브라우저 자동화 → 실제 기기</span></p>
+    <p class="fade-up small" style="margin-bottom:12px;">현재 방식 차단 시 대안 — 난이도/성공률 순위</p>
+    <table class="fade-up">
+      <tr>
+        <th style="width:36px;">#</th>
+        <th style="width:170px;">방법</th>
+        <th style="width:70px;">난이도</th>
+        <th style="width:80px;">성공률</th>
+        <th>핵심 특징</th>
+      </tr>
+      <tr>
+        <td><strong>1</strong></td>
+        <td><strong>간격/패턴 조정</strong></td>
+        <td><span class="badge pass">하</span></td>
+        <td><span class="badge pass">높음</span></td>
+        <td>랜덤 지터(±1초) 추가, 가우시안 분포 간격. 코드 수정만으로 즉시 적용.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td><strong>TLS 에뮬레이션</strong></td>
+        <td><span class="badge warn">중</span></td>
+        <td><span class="badge pass">높음</span></td>
+        <td>curl_cffi로 실제 Chrome TLS 핑거프린트 모방. requests 교체로 적용.</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td><strong>브라우저 자동화</strong></td>
+        <td><span class="badge warn">중</span></td>
+        <td><span class="badge warn">중~높</span></td>
+        <td>Playwright로 코레일 웹 직접 제어. DynaPath 무관. 속도 느림.</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td><strong>IP 로테이션</strong></td>
+        <td><span class="badge warn">중</span></td>
+        <td><span class="badge warn">중</span></td>
+        <td>주거용 프록시 또는 모바일 CGNAT로 IP 분산. IP 기반 차단에 효과적.</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td><strong>실제 기기 자동화</strong></td>
+        <td><span class="badge fail">상</span></td>
+        <td><span class="badge pass">높음</span></td>
+        <td>ADB + UIAutomator2로 공식 앱 조작. <strong>모든 차단 우회</strong>. 기기 필요.</td>
+      </tr>
+      <tr>
+        <td><strong>6</strong></td>
+        <td><strong>API 역공학 재수행</strong></td>
+        <td><span class="badge fail">상</span></td>
+        <td><span class="badge warn">변동</span></td>
+        <td>최신 APK 디컴파일 → DynaPath 변경 분석. Challenge-Response 시 무력.</td>
+      </tr>
+    </table>
+    <div class="fade-up" style="margin-top:12px; background:var(--primary-light); padding:10px 16px; border-radius:10px;">
+      <p style="font-size:0.88rem; color:var(--primary); font-weight:700;">권장 대응 순서: <span style="font-weight:400;">간격 조정 → TLS 에뮬레이션 → 브라우저 자동화 → 실제 기기</span></p>
     </div>
   </div>
 </div>

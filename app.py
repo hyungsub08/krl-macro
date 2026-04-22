@@ -146,14 +146,28 @@ def macro_worker(session, params):
                 time.sleep(interval)
                 continue
             except Exception as e:
+                err = str(e)
                 session.log(f"#{session.attempt} 조회 오류: {e}", "warn")
-                if "P058" in str(e) or "로그인" in str(e):
+                if "P058" in err or "로그인" in err:
                     session.log("세션 만료 - 재로그인 시도...")
                     try:
                         korail.login(params["id"], params["pw"])
                         session.log("재로그인 성공")
                     except Exception:
                         session.log("재로그인 실패", "error")
+                        session.status = "error"
+                        return
+                elif "MACRO ERROR" in err or "최신 버전" in err or "업데이트" in err:
+                    session.consecutive_macro_errors = getattr(session, "consecutive_macro_errors", 0) + 1
+                    if session.consecutive_macro_errors == 1:
+                        session.log("⚠ DynaPath anti-bot 차단 감지", "error")
+                        session.log("원인: 앱 버전 또는 토큰 알고리즘이 서버 검증과 불일치", "error")
+                        session.log("대응 1: 간격을 5초 이상으로 늘려 재시도", "warn")
+                        session.log("대응 2: 지속 실패 시 korail2 라이브러리의 _version 및 DynaPath 알고리즘 업데이트 필요", "warn")
+                        session.log("상세 가이드: ANALYSIS.md 섹션 8.2 참조", "warn")
+                    if session.consecutive_macro_errors >= 3:
+                        session.log(f"MACRO ERROR {session.consecutive_macro_errors}회 연속 발생 - 매크로 중지", "error")
+                        session.log("권장 대안: TLS 에뮬레이션(curl_cffi), 브라우저 자동화(Playwright), 또는 실제 기기 자동화로 전환", "error")
                         session.status = "error"
                         return
                 time.sleep(interval)
